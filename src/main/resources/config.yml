@@ -1,0 +1,24 @@
+# default player health
+default_player_health: 40
+
+# the hour that the day will change, in server time (0-23)
+# you can account for your timezone if necessary
+# FIXME ignored
+day_changeover: 0
+
+# numbers of blocks of initial border
+initial_border: 25000
+
+# blocks border will shrink each day
+border_shrink: 1000
+
+# border shrink speed, in blocks per second
+border_shrink_speed: 1
+
+# you generally shouldn't change this manually
+# note that changing the day will not automatically apply border changes
+# it's recommended to update this using /ss set day
+current_day: 1
+
+# do not edit this manually
+version: 1

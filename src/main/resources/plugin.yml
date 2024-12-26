@@ -1,0 +1,4 @@
+name: SurvivalSprint
+version: '1.0-SNAPSHOT'
+main: codes.towel.survivalSprint.SurvivalSprint
+api-version: '1.21'
