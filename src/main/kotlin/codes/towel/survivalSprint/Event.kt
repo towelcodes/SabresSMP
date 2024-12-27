@@ -33,28 +33,72 @@ abstract class Event(val em: GlobalEventManager, val duration: Long?) {
     abstract val listeners: Set<Listener>
 
     /**
-     * Immeediately start without pushing to queue
-     */
-    abstract fun quickstart(): Boolean
-
-    /**
      * Queues the event to start at the specified time.
      * Will do nothing if the event already has been queued.
      * Returns true if the event was queued.
      */
     abstract fun queue(start: Date): Boolean;
 
-    abstract fun start(): Boolean
+    /**
+     * Starts the event after the specified delay. Places in the queue and updates the start time.
+     * If the delay is 0, it will start immediately without pushing to queue.
+     * Does nothing if the event is already started.
+     * Returns true if the event was started.
+     */
+    abstract fun start(delay: Long): Boolean
 
+    /**
+     * Stops the event. Removes from active events. Does not update duration.
+     * All active Listeners are unregistered.
+     * Does nothing if the event is already stopped.
+     * Returns true if the event was stopped.
+     */
     abstract fun stop(): Boolean
 
+    /**
+     * Cancels the event, stopping it if it is active or removing it from the queue.
+     * Unregisters all active Listeners.
+     */
     abstract fun cancel()
 
-    abstract fun halt()
+    /**
+     * Pause execution of the event, until the event is manually resumed.
+     * The start time will be updated when the event is resumed to account for the change,
+     * relative to its original start time.
+     * Unregisters all active listeners.
+     * If a halt is already active, it will be overriden.
+     */
+    // abstract fun halt()
 
-    abstract fun halt(delay: Long)
+    /**
+     * Pauses execution of the event for a specified amount of time.
+     * Updates the start time accordingly.
+     * Unregisters all active listeners until the event automatically resumes.
+     * If a halt is already active, it will be overriden with this new delay.
+     */
+    // abstract fun halt(delay: Long)
+
+    /**
+     * Unhalts a halt(). Resumes the event.
+     */
+    // abstract fun unhalt()
 }
 
 abstract class TargetedEvent(em: GlobalEventManager, duration: Long?, val target: Player?) : Event(em, duration)
 
-data class SerializableEvent(val enum: EventEnum, val start: Date?, val duration: Long?)
+data class SerializableEvent(val enum: EventEnum, val start: Long?, val duration: Long?) {
+    companion object {
+        fun from(input: String, delimiter: Char): SerializableEvent {
+            val parts = input.split(delimiter)
+            return SerializableEvent(
+                EventEnum.valueOf(parts[0]),
+                parts[1].toLongOrNull(),
+                parts[2].toLongOrNull()
+            )
+        }
+    }
+
+    fun toString(delimiter: Char): String {
+        return "${enum}${delimiter}${start ?: "null"}${delimiter}${duration ?: "null"}"
+    }
+}

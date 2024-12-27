@@ -88,12 +88,44 @@ abstract class EventManager<T: Event>(val plugin: SurvivalSprint) {
 }
 
 class PlayerEventManager(plugin: SurvivalSprint, val player: Player) : EventManager<TargetedEvent>(plugin) {
-    private fun serializeEvents(): String {
-        val events: List<SerializableEvent> = mutableListOf()
+    private fun serializeEvents(outerDelimiter: Char, innerDelimiter: Char): String {
+        // TODO use iteration logic instead of for loop
+        val events: MutableList<SerializableEvent> = mutableListOf()
+        for (e in upcomingEvents) {
+            events.add(
+                SerializableEvent(
+                    e.enum,
+                    e.start?.time?.minus(Date().time),
+                    e.duration
+                )
+            )
+        }
+
+        var out = ""
+        var first = true
+        for (e in events) {
+            if (first) {
+                out += e.toString(innerDelimiter)
+                first = false
+                continue
+            }
+            out += "${outerDelimiter}${e.toString(innerDelimiter)}"
+        }
+
+        logger.info("Serialized events for ${player.name} to: $out")
+        return out
     }
 
-    private fun deserializeEvents(input: String) {
+    private fun deserializeEvents(input: String, outerDelimiter: Char, innerDelimiter: Char): List<SerializableEvent> {
+        val events: MutableList<SerializableEvent> = mutableListOf()
 
+        val parts = input.split(outerDelimiter)
+        for (part in parts) {
+            events.add(SerializableEvent.from(part, innerDelimiter))
+        }
+
+        logger.info("Deserialized events for ${player.name} from: $input to $events")
+        return events.toList()
     }
 
     init {
@@ -101,7 +133,15 @@ class PlayerEventManager(plugin: SurvivalSprint, val player: Player) : EventMana
         if (!pdc.has(NamespacedKey(plugin, "events"), PersistentDataType.STRING)) {
             logger.info("${player.name} has no stored events");
         } else {
-
+            val input = pdc.get(NamespacedKey(plugin, "events"), PersistentDataType.STRING)
+            if (input != null) {
+                val events = deserializeEvents(input, '|', '_')
+                for (event in events) {
+                    // addUpcoming(event.enum.clazz.constructors)
+                }
+            } else {
+                logger.warn("Failed to deserialize events for ${player.name}")
+            }
         }
     }
 }
