@@ -1,6 +1,5 @@
 package codes.towel.survivalSprint
 
-import codes.towel.survivalSprint.event.EventEnum
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -9,19 +8,10 @@ import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.persistence.PersistentDataType
 import org.slf4j.LoggerFactory
-import java.io.Serial
 import java.util.Date
 
-abstract class EventManager<T: Event>(val plugin: SurvivalSprint) {
+abstract class EffectManager<T: Effect>(val plugin: SurvivalSprint) {
     protected val logger = LoggerFactory.getLogger(this.javaClass)
-
-    /**
-     * List of upcoming events. Generally, the most immediate will be located at index 0,
-     * and their full information will be displayed to the client.
-     * However, this list cannot be expected to always be sorted as some events may be pushed to the front manually.
-     */
-    private val _upcomingEvents = mutableListOf<T>()
-    val upcomingEvents: List<T> get() = _upcomingEvents.toList()
 
     private val _activeEvents = mutableListOf<T>()
     val activeEvents: List<T> get() = _activeEvents.toList()
@@ -87,13 +77,13 @@ abstract class EventManager<T: Event>(val plugin: SurvivalSprint) {
     }
 }
 
-class PlayerEventManager(plugin: SurvivalSprint, val player: Player) : EventManager<TargetedEvent>(plugin) {
+class PlayerEffectManager(plugin: SurvivalSprint, val player: Player) : EffectManager<TargetedEffect>(plugin) {
     private fun serializeEvents(outerDelimiter: Char, innerDelimiter: Char): String {
         // TODO use iteration logic instead of for loop
-        val events: MutableList<SerializableEvent> = mutableListOf()
+        val events: MutableList<SerializableEffect> = mutableListOf()
         for (e in upcomingEvents) {
             events.add(
-                SerializableEvent(
+                SerializableEffect(
                     e.enum,
                     e.start?.time?.minus(Date().time),
                     e.duration
@@ -116,12 +106,12 @@ class PlayerEventManager(plugin: SurvivalSprint, val player: Player) : EventMana
         return out
     }
 
-    private fun deserializeEvents(input: String, outerDelimiter: Char, innerDelimiter: Char): List<SerializableEvent> {
-        val events: MutableList<SerializableEvent> = mutableListOf()
+    private fun deserializeEvents(input: String, outerDelimiter: Char, innerDelimiter: Char): List<SerializableEffect> {
+        val events: MutableList<SerializableEffect> = mutableListOf()
 
         val parts = input.split(outerDelimiter)
         for (part in parts) {
-            events.add(SerializableEvent.from(part, innerDelimiter))
+            events.add(SerializableEffect.from(part, innerDelimiter))
         }
 
         logger.info("Deserialized events for ${player.name} from: $input to $events")
@@ -146,13 +136,13 @@ class PlayerEventManager(plugin: SurvivalSprint, val player: Player) : EventMana
     }
 }
 
-class GlobalEventManager(plugin: SurvivalSprint) : EventManager<Event>(plugin), Listener {
-    private val _playerEvents = mutableMapOf<Player, PlayerEventManager>()
-    val playerEvents: Map<Player, PlayerEventManager> get() = _playerEvents.toMap()
+class GlobalEffectManager(plugin: SurvivalSprint) : EffectManager<Effect>(plugin), Listener {
+    private val _playerEvents = mutableMapOf<Player, PlayerEffectManager>()
+    val playerEvents: Map<Player, PlayerEffectManager> get() = _playerEvents.toMap()
 
     @EventHandler
     fun onJoin(e: PlayerJoinEvent) {
-        _playerEvents[e.player] = PlayerEventManager(plugin, e.player)
+        _playerEvents[e.player] = PlayerEffectManager(plugin, e.player)
         logger.info("${e.player.name} event manager started.")
     }
 

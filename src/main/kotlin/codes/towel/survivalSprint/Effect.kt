@@ -5,7 +5,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.Listener
 import java.util.*
 
-abstract class Event(val em: GlobalEventManager, val duration: Long?) {
+abstract class Effect(val em: GlobalEffectManager, val duration: Long?) {
     abstract val enum: EventEnum
 
     override fun toString(): String {
@@ -84,13 +84,13 @@ abstract class Event(val em: GlobalEventManager, val duration: Long?) {
     // abstract fun unhalt()
 }
 
-abstract class TargetedEvent(em: GlobalEventManager, duration: Long?, val target: Player?) : Event(em, duration)
+abstract class TargetedEffect(em: GlobalEffectManager, duration: Long?, val target: Player?) : Effect(em, duration)
 
-data class SerializableEvent(val enum: EventEnum, val start: Long?, val duration: Long?) {
+data class SerializableEffect(val enum: EventEnum, val start: Long?, val duration: Long?) {
     companion object {
-        fun from(input: String, delimiter: Char): SerializableEvent {
+        fun from(input: String, delimiter: Char): SerializableEffect {
             val parts = input.split(delimiter)
-            return SerializableEvent(
+            return SerializableEffect(
                 EventEnum.valueOf(parts[0]),
                 parts[1].toLongOrNull(),
                 parts[2].toLongOrNull()
