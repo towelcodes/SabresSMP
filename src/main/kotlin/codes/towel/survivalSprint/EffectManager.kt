@@ -1,155 +1,140 @@
 package codes.towel.survivalSprint
 
+import codes.towel.survivalSprint.effect.Effect
+import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
+import org.bukkit.configuration.file.FileConfiguration
+import org.bukkit.configuration.file.YamlConfiguration
+import org.bukkit.configuration.serialization.ConfigurationSerializable
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.persistence.PersistentDataType
+import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.scheduler.BukkitTask
 import org.slf4j.LoggerFactory
-import java.util.Date
+import java.io.File
+import java.util.*
 
-abstract class EffectManager<T: Effect>(val plugin: SurvivalSprint) {
-    protected val logger = LoggerFactory.getLogger(this.javaClass)
+/**
+ * handles effects, as well as removing effects on expiry
+ */
+open class EffectManager(val plugin: JavaPlugin) : ConfigurationSerializable {
+    private val effects = mutableMapOf<Effect, BukkitTask?>()
 
-    private val _activeEvents = mutableListOf<T>()
-    val activeEvents: List<T> get() = _activeEvents.toList()
+    fun addEffect(effect: Effect) {
+        if (effect.duration != null) {
+            val task = object : BukkitRunnable() {
+                override fun run() {
+                    effects.remove(effect)
+                }
+            }.runTaskLater(plugin, effect.duration)
+            effects[effect] = task
+        }
+    }
 
-    private fun sortedPush(event: T, list: MutableList<T >): Boolean {
-        if (list.isEmpty()) {
-            list.add(event)
-            return true
+    fun removeEffect(effect: Effect) {
+        if (effects.containsKey(effect)) {
+            effects[effect]?.cancel()
+            effects.remove(effect)
+        }
+    }
+
+    fun getEffects(): List<Effect> {
+        return effects.keys.toList()
+    }
+
+    override fun serialize(): MutableMap<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        map["effects"] = this.effects.keys.map { it.serialize() }
+        return map
+    }
+
+    companion object {
+        @JvmStatic
+        fun deserialize(plugin: JavaPlugin, data: Map<String, Any>): EffectManager {
+            val manager = EffectManager(plugin)
+            val effects = data["effects"] as List<Map<String, Any>>?
+            effects?.forEach { manager.addEffect(Effect.deserialize(it)) }
+            return manager
+        }
+    }
+}
+
+class GlobalEffectManager(plugin: JavaPlugin) : EffectManager(plugin) {
+    private val _playerEffects = mutableMapOf<UUID, EffectManager>()
+    val playerEffects: Map<UUID, EffectManager> get() = _playerEffects.toMap()
+
+    var linkedFile: FileConfiguration? = null
+         private set
+
+    fun linkFile(file: FileConfiguration) : Boolean {
+        if (linkedFile != null) {
+            return false
         }
 
-        // FIXME this should actually look for the first position that does have a start time first
-        if (event.start == null) {
-            list.add(event)
-            return true
-        }
-
-        val iter = list.listIterator()
-        while (iter.hasNext()) {
-            val e = iter.next()
-            if ((e.start?.compareTo(event.start) ?: 1) > 0) {
-                iter.previous()
-                iter.add(event)
-                return true
+        linkedFile = file
+        object : BukkitRunnable() {
+            override fun run() {
+                save()
             }
-        }
-
-        list.add(event)
+        }.runTaskTimer(plugin, 100, 600) // TODO: make configurable
         return true
     }
 
-    /**
-     * Add an upcoming event to the list.
-     * Does nothing after (no scheduling)
-     */
-    fun addUpcoming(event: T): Boolean {
-        if (_upcomingEvents.contains(event)) return false
-        return sortedPush(event, _upcomingEvents)
-    }
-
-    /**
-     * Adds an active event to the list
-     * Does nothing after (no scheduling)
-     */
-    fun addActive(event: T): Boolean {
-        if (_activeEvents.contains(event)) return false
-        return sortedPush(event, _activeEvents)
-    }
-
-    /**
-     * Promotes an event currently in the upcoming list to the active list
-     * Returns false if the event was not in the active position
-     */
-    fun promoteToActive(event: T): Boolean {
-        return _upcomingEvents.remove(event) && addActive(event)
-
-    }
-
-    /**
-     * Remove an event. Does not cancel.
-     */
-    fun removeEvent(event: T): Boolean {
-        return _upcomingEvents.remove(event) || _activeEvents.remove(event)
-    }
-}
-
-class PlayerEffectManager(plugin: SurvivalSprint, val player: Player) : EffectManager<TargetedEffect>(plugin) {
-    private fun serializeEvents(outerDelimiter: Char, innerDelimiter: Char): String {
-        // TODO use iteration logic instead of for loop
-        val events: MutableList<SerializableEffect> = mutableListOf()
-        for (e in upcomingEvents) {
-            events.add(
-                SerializableEffect(
-                    e.enum,
-                    e.start?.time?.minus(Date().time),
-                    e.duration
-                )
-            )
+    fun save() : Boolean {
+        if (linkedFile == null) {
+            return false
         }
-
-        var out = ""
-        var first = true
-        for (e in events) {
-            if (first) {
-                out += e.toString(innerDelimiter)
-                first = false
-                continue
-            }
-            out += "${outerDelimiter}${e.toString(innerDelimiter)}"
-        }
-
-        logger.info("Serialized events for ${player.name} to: $out")
-        return out
+        linkedFile?.set("effects", serialize())
+        return true
     }
 
-    private fun deserializeEvents(input: String, outerDelimiter: Char, innerDelimiter: Char): List<SerializableEffect> {
-        val events: MutableList<SerializableEffect> = mutableListOf()
-
-        val parts = input.split(outerDelimiter)
-        for (part in parts) {
-            events.add(SerializableEffect.from(part, innerDelimiter))
-        }
-
-        logger.info("Deserialized events for ${player.name} from: $input to $events")
-        return events.toList()
-    }
-
-    init {
-        val pdc = player.persistentDataContainer;
-        if (!pdc.has(NamespacedKey(plugin, "events"), PersistentDataType.STRING)) {
-            logger.info("${player.name} has no stored events");
+    fun addPlayerEffect(player: UUID, effect: Effect) {
+        if (this._playerEffects.containsKey(player)) {
+            this._playerEffects[player]!!.addEffect(effect)
         } else {
-            val input = pdc.get(NamespacedKey(plugin, "events"), PersistentDataType.STRING)
-            if (input != null) {
-                val events = deserializeEvents(input, '|', '_')
-                for (event in events) {
-                    // addUpcoming(event.enum.clazz.constructors)
-                }
-            } else {
-                logger.warn("Failed to deserialize events for ${player.name}")
-            }
+            this._playerEffects[player] = EffectManager(plugin)
+            this._playerEffects[player]!!.addEffect(effect)
+        }
+    }
+
+    fun getPlayerEffects(player: UUID): List<Effect> {
+        return this._playerEffects[player]!!.getEffects()
+    }
+
+    fun removePlayerEffect(player: UUID, effect: Effect) {
+        if (this._playerEffects.containsKey(player)) {
+            this._playerEffects[player]!!.removeEffect(effect)
+        }
+    }
+
+    override fun serialize(): MutableMap<String, Any> {
+        val map = mutableMapOf<String, Any>()
+        map["player_effects"] = this._playerEffects.map { it.key.toString() to it.value.serialize() }
+        map["global_effects"] = this.getEffects().map { it.serialize() }
+        return map
+    }
+
+    companion object {
+        fun loadFrom(plugin: JavaPlugin, file: File) : GlobalEffectManager? {
+            val data = YamlConfiguration.loadConfiguration(file)
+            val em = data.getSerializable("effects", GlobalEffectManager::class.java)
+            em?.linkFile(data)
+            return em
+        }
+
+        @JvmStatic
+        fun deserialize(plugin: JavaPlugin, data: Map<String, Any>): GlobalEffectManager {
+            val manager = GlobalEffectManager(plugin)
+            val playerEffects = data["player_effects"] as List<Pair<String, Map<String, Any>>>?
+            playerEffects?.forEach { manager._playerEffects[UUID.fromString(it.first)] = EffectManager.deserialize(plugin, it.second) }
+            val globalEffects = data["global_effects"] as List<Map<String, Any>>?
+            globalEffects?.forEach { manager.addEffect(Effect.deserialize(it)) }
+            return manager
         }
     }
 }
-
-class GlobalEffectManager(plugin: SurvivalSprint) : EffectManager<Effect>(plugin), Listener {
-    private val _playerEvents = mutableMapOf<Player, PlayerEffectManager>()
-    val playerEvents: Map<Player, PlayerEffectManager> get() = _playerEvents.toMap()
-
-    @EventHandler
-    fun onJoin(e: PlayerJoinEvent) {
-        _playerEvents[e.player] = PlayerEffectManager(plugin, e.player)
-        logger.info("${e.player.name} event manager started.")
-    }
-
-    @EventHandler
-    fun onQuit(e: PlayerQuitEvent) {
-        val pe = _playerEvents.remove(e.player)
-        logger.info("Saving events for ${e.player.name}")
-    }
-}
-

@@ -1,5 +1,6 @@
 package codes.towel.survivalSprint
 
+import codes.towel.survivalSprint.effect.Effect
 import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
@@ -61,12 +62,14 @@ data class ServerState(
 class SurvivalSprint : JavaPlugin() {
     lateinit var serverConf: ServerConfiguration
     lateinit var serverState: ServerState
-    lateinit var globalEventManager: GlobalEffectManager
+    lateinit var effectManager: GlobalEffectManager
 
     override fun onEnable() {
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             logger.info("Hooked into PlaceholderAPI")
         }
+
+        Effect.registerEffects()
 
         saveDefaultConfig()
         serverConf = ServerConfiguration.load(config)
