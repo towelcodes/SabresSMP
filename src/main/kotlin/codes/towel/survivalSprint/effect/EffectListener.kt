@@ -1,6 +1,5 @@
 package codes.towel.survivalSprint.effect
 
-import codes.towel.survivalSprint.GlobalEffectManager
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener

@@ -1,4 +1,10 @@
 name: SurvivalSprint
+authors:
+  - teatowel
 version: '1.0-SNAPSHOT'
 main: codes.towel.survivalSprint.SurvivalSprint
 api-version: '1.21'
+commands:
+  ss:
+    permission: survivalsprint.admin
+    description: 'base command for game management'

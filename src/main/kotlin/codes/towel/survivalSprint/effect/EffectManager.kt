@@ -1,21 +1,11 @@
-package codes.towel.survivalSprint
+package codes.towel.survivalSprint.effect
 
-import codes.towel.survivalSprint.effect.Effect
-import org.bukkit.Bukkit
-import org.bukkit.NamespacedKey
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.configuration.serialization.ConfigurationSerializable
-import org.bukkit.entity.Player
-import org.bukkit.event.EventHandler
-import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.persistence.PersistentDataType
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
 
@@ -131,7 +121,9 @@ class GlobalEffectManager(plugin: JavaPlugin) : EffectManager(plugin) {
         fun deserialize(plugin: JavaPlugin, data: Map<String, Any>): GlobalEffectManager {
             val manager = GlobalEffectManager(plugin)
             val playerEffects = data["player_effects"] as List<Pair<String, Map<String, Any>>>?
-            playerEffects?.forEach { manager._playerEffects[UUID.fromString(it.first)] = EffectManager.deserialize(plugin, it.second) }
+            playerEffects?.forEach { manager._playerEffects[UUID.fromString(it.first)] =
+                EffectManager.deserialize(plugin, it.second)
+            }
             val globalEffects = data["global_effects"] as List<Map<String, Any>>?
             globalEffects?.forEach { manager.addEffect(Effect.deserialize(it)) }
             return manager
