@@ -1,0 +1,40 @@
+{
+    "model": {
+        "type": "select",
+        "property": "custom_model_data",
+        "fallback": {
+            "type": "model",
+            "model": "item/netherite_sword"
+        },
+        "cases": [
+            {
+                "when": "smoke_sabre",
+                "model": {
+                    "type": "model",
+                    "model": "item/smoke_sabre"
+                }
+            },
+            {
+                "when": "storm_sabre",
+                "model": {
+                    "type": "model",
+                    "model": "item/storm_sabre"
+                }
+            },
+            {
+                "when": "shade_sabre",
+                "model": {
+                    "type": "model",
+                    "model": "item/shade_sabre"
+                }
+            },
+            {
+                "when": "snow_sabre",
+                "model": {
+                    "type": "model",
+                    "model": "item/snow_sabre"
+                }
+            }
+        ]
+    }
+}

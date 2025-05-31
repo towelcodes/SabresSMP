@@ -1,0 +1,11 @@
+{
+    "providers": [
+        {
+            "type": "bitmap",
+            "file": "font/sabres_smp_s.png",
+            "ascent": 32,
+            "height": 64,
+            "chars": ["\ue001"]
+        }
+    ]
+}

@@ -1,0 +1,17 @@
+{
+    "providers": [
+        {
+            "type": "bitmap",
+            "file": "ss:font/overlay.png",
+            "ascent": 64,
+            "height": 128,
+            "chars": ["\ue000"]
+        }, {
+            "type": "bitmap",
+            "file": "ss:font/sabres_smp.png",
+            "ascent": 305,
+            "height": 305,
+            "chars": ["\ue001"]
+        }
+    ]
+}
