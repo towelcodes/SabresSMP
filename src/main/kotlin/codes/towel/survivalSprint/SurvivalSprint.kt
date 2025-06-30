@@ -81,13 +81,13 @@ class SurvivalSprint : JavaPlugin() {
         val serverStateFile = File(dataFolder, "state.yml")
         serverState = ServerState.load(this, serverStateFile, serverConf)
 
-        // TODO: create a class to hold logic for this
+        // initialize the effect manager
         val playerDataFile = File(dataFolder, "players.yml")
-        playerDataFile.createNewFile()
-        effectManager = GlobalEffectManager.loadFrom(this, playerDataFile) ?: GlobalEffectManager(this)
+        effectManager = GlobalEffectManager.loadFrom(this, playerDataFile)
+        server.pluginManager.registerEvents(effectManager, this)
 //        server.pluginManager.registerEvents(EffectListener(effectManager), this)
 
-        getCommand("ss")?.setExecutor(ManagementCommand())
+        getCommand("ss")?.setExecutor(ManagementCommand(effectManager))
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             SSPlaceholderExpansion(this, serverConf, serverState, effectManager).register()

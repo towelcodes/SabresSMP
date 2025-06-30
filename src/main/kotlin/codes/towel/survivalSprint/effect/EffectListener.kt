@@ -1,17 +1,11 @@
 package codes.towel.survivalSprint.effect
 
-import org.bukkit.entity.Player
-import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.entity.EntityEvent
 
+/**
+ * class to handle all events for effects
+ * since spigot doesn't support listening for all EntityEvents we have to listen for specific ones
+ * this should be owned by the GlobalEffectManager
+ */
 class EffectListener(val effectManager: GlobalEffectManager) : Listener {
-    @EventHandler
-    fun onEntityEvent(e: EntityEvent) {
-        if (e.entity !is Player) return
-        val player = e.entity as Player
-        effectManager.getPlayerEffects(player.uniqueId).forEach {
-            it.relevantEvents[e::class.java]?.invoke(e)
-        }
-    }
 }

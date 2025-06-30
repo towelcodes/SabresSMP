@@ -10,6 +10,7 @@ class TotemCooldownEffect(duration: Long?) : Effect(duration) {
     override val icon = "C"
     override val color = "&8"
     override val visible = true
+    override val persist = true
     override val relevantEvents: Map<Class<out Event>, (Event) -> Unit>
         get() = mapOf(InventoryClickEvent::class.java to ::onInventoryClick)
 

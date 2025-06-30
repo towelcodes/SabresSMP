@@ -12,6 +12,8 @@ abstract class Effect(val duration: Long?) : ConfigurationSerializable {
     abstract val color: String
     abstract val visible: Boolean
 
+    abstract val persist: Boolean // true means relative to world time, false is player time
+
     override fun toString(): String {
         return this.name
     }
