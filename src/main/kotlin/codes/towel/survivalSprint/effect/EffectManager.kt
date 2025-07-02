@@ -1,12 +1,9 @@
 package codes.towel.survivalSprint.effect
 
-import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
-import org.bukkit.configuration.serialization.ConfigurationSerializable
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
@@ -17,92 +14,110 @@ import java.util.*
 /**
  * handles effects, as well as removing effects on expiry
  */
-open class EffectManager(val plugin: JavaPlugin) : ConfigurationSerializable {
-    private val effects = mutableMapOf<Effect, BukkitTask?>()
+open class EffectManager(val plugin: JavaPlugin) {
+    private val _effects = mutableMapOf<Effect, BukkitTask?>()
+    val effects: List<Effect> get() = _effects.keys.toList()
 
     fun addEffect(effect: Effect) {
         if (effect.duration != null) {
             val task = object : BukkitRunnable() {
                 override fun run() {
-                    effects.remove(effect)
+                    plugin.logger.info("Removing effect ${effect.javaClass.simpleName} (expired)")
+                    _effects.remove(effect)
                 }
-            }.runTaskLater(plugin, effect.duration)
-            effects[effect] = task
+            }.runTaskLater(plugin, effect.duration.toLong())
+            _effects[effect] = task
+        } else {
+            _effects[effect] = null
         }
     }
 
     fun removeEffect(effect: Effect) {
-        if (effects.containsKey(effect)) {
-            effects[effect]?.cancel()
-            effects.remove(effect)
+        if (_effects.containsKey(effect)) {
+            _effects[effect]?.cancel()
+            _effects.remove(effect)
         }
     }
 
-    fun getEffects(): List<Effect> {
-        return effects.keys.toList()
-    }
-
-    override fun serialize(): MutableMap<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        map["effects"] = this.effects.keys.map { it.serialize() }
-        return map
+    fun serialize(): List<Map<String, Any>> {
+        return effects.map { it.serialize() }
     }
 
     companion object {
         @JvmStatic
-        fun deserialize(plugin: JavaPlugin, data: Map<String, Any>): EffectManager {
+        fun deserialize(plugin: JavaPlugin, data: List<Map<String, Any>>): EffectManager {
+            plugin.logger.info("Deserializing effects...")
+            plugin.logger.info(data.toString())
             val manager = EffectManager(plugin)
-            val effects = data["effects"] as List<Map<String, Any>>?
-            effects?.forEach { manager.addEffect(Effect.deserialize(it)) }
+            data.forEach {
+                plugin.logger.info(it.toString())
+                val effect = Effect.deserialize(it)
+                plugin.logger.info(effect.toString())
+                manager.addEffect(effect)
+            }
+            plugin.logger.info("Deserialized effects: ${manager.effects}")
             return manager
         }
     }
 }
 
-class GlobalEffectManager(plugin: JavaPlugin) : EffectManager(plugin), Listener {
+class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(plugin), Listener {
     private val logger = LoggerFactory.getLogger("GlobalEffectManager:${hashCode()}")
 
     private val _playerEffects = mutableMapOf<UUID, EffectManager>()
-    val playerEffects: Map<UUID, EffectManager> get() = _playerEffects.toMap()
 
-    var linkedFile: Pair<File, FileConfiguration>? = null
-         private set
+    private val fileConfiguration: YamlConfiguration = YamlConfiguration.loadConfiguration(file)
+
+    val playerEffects: Map<UUID, EffectManager> get() = _playerEffects.toMap()
 
     private val effectListener: EffectListener = EffectListener(this)
 
     init {
         plugin.server.pluginManager.registerEvents(effectListener, plugin)
-    }
 
-    fun linkFile(file: File, fileConf: FileConfiguration) : Boolean {
-        logger.info("linking file")
-        if (linkedFile != null) {
-            logger.info("file already linked")
-            return false
+        logger.info("keys: ${fileConfiguration.getKeys(true)}")
+        logger.info("root keys: ${fileConfiguration.getKeys(false)}")
+        logger.info(fileConfiguration.toString())
+        logger.info(fileConfiguration.saveToString())
+
+        // deserialize global em from file
+        val global = fileConfiguration.getMapList("global")
+        if (global.size > 0) {
+            logger.info("Loading global effects...")
+            global.forEach { addEffect(Effect.deserialize(it as Map<String, Any>)) }
+        } else {
+            logger.info("No global effects are present")
         }
 
-        linkedFile = Pair(file, fileConf)
-        object : BukkitRunnable() {
-            override fun run() {
-                save()
+        val players = fileConfiguration.getConfigurationSection("player")
+//        val players = fileConfiguration.get("player")
+        if (players != null) {
+            logger.info("Loading player effects...")
+            logger.info(players.toString())
+            for ((uuid, data) in players.getValues(true)) {
+                val em = deserialize(plugin, data as List<Map<String, Any>>)
+                _playerEffects[UUID.fromString(uuid)] = em
             }
-        }.runTaskTimer(plugin, 40, 600) // TODO: make configurable
-        logger.info("linked file: $linkedFile")
-        return true
+        } else {
+            logger.info("No player effects are present")
+        }
+        // create timer to save to file automatically
+//        object : BukkitRunnable() {
+//            override fun run() {
+//                save()
+//            }
+//        }.runTaskTimer(plugin, 40, 600) // TODO: make configurable
     }
 
     fun save() : Boolean {
-        if (linkedFile == null) {
-            logger.info("No file linked")
-            return false
+        logger.info("Saving effects...")
+        fileConfiguration.set("global", this.serialize())
+        val playerSection = fileConfiguration.createSection("player")
+        for ((uuid, em) in _playerEffects) {
+            playerSection.set(uuid.toString(), em.serialize())
         }
-        logger.info("saving effects to file")
-        linkedFile?.second?.set("effects", serialize())
-        linkedFile?.second?.save(linkedFile?.first!!)
-        logger.info("Saved effects")
-        val section = linkedFile?.second?.getValues(true)
-        logger.info(section.toString())
-
+        fileConfiguration.save(file)
+        logger.info("Saved effects to $file")
         return true
     }
 
@@ -117,7 +132,7 @@ class GlobalEffectManager(plugin: JavaPlugin) : EffectManager(plugin), Listener 
 
     fun getPlayerEffects(player: UUID): List<Effect> {
         // TODO add global effects
-        return this._playerEffects[player]!!.getEffects()
+        return this._playerEffects[player]!!.effects
     }
 
     fun removePlayerEffect(player: UUID, effect: Effect) {
@@ -128,62 +143,44 @@ class GlobalEffectManager(plugin: JavaPlugin) : EffectManager(plugin), Listener 
 
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent) {
-        val em = linkedFile?.second?.getSerializable("effects.player_effects.${e.player.uniqueId}", EffectManager::class.java)
-        if (em != null) {
-            _playerEffects[e.player.uniqueId] = em
-            logger.info("Loaded effects for ${e.player.name}")
-        } else {
-            _playerEffects[e.player.uniqueId] = EffectManager(plugin)
-            logger.info("No effects to load for ${e.player.name}")
-        }
-        logger.info(_playerEffects.keys.toString())
-        logger.info(_playerEffects.values.toString())
-    }
-
-    @EventHandler
-    fun onPlayerLeave(e: PlayerQuitEvent) {
-        val em = _playerEffects.remove(e.player.uniqueId)
-        if (em != null) {
-            linkedFile?.second?.set("effects.player_effects.${e.player.uniqueId}", em.serialize())
-            logger.info("Saved effects for ${e.player.name}")
-        } else {
-            logger.info("No effects to save for ${e.player.name}")
-        }
-    }
-
-    override fun serialize(): MutableMap<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        val effects = this._playerEffects.map { it.key.toString() to it.value.serialize() }.toMap()
-        logger.info("Stored effects: $effects")
-        val existingEffects = linkedFile?.second?.getConfigurationSection("effects.player_effects")?.getValues(true)
-        logger.info("Existing effects: $existingEffects")
-        val merged = (existingEffects?.toMutableMap() ?: mutableMapOf<String, Any>()) + effects
-        logger.info("Merged effects: $merged")
-
-        map["player_effects"] = merged
-        map["global_effects"] = this.getEffects().map { it.serialize() }
-        return map
-    }
-
-    companion object {
-        fun loadFrom(plugin: JavaPlugin, file: File) : GlobalEffectManager {
-            file.createNewFile()
-            val data = YamlConfiguration.loadConfiguration(file)
-            val em = data.getSerializable("effects", GlobalEffectManager::class.java) ?: GlobalEffectManager(plugin)
-            em.linkFile(file, data)
-            return em
+        if (_playerEffects.containsKey(e.player.uniqueId)) {
+            logger.info("Effects for ${e.player.name} are loaded")
+            logger.info(_playerEffects[e.player.uniqueId]!!.effects.toString())
+            // TODO we need to pause counting for effects that do not persist !!
+            return
         }
 
-        @JvmStatic
-        fun deserialize(plugin: JavaPlugin, data: Map<String, Any>): GlobalEffectManager {
-            val manager = GlobalEffectManager(plugin)
-            val playerEffects = data["player_effects"] as List<Pair<String, Map<String, Any>>>?
-            playerEffects?.forEach { manager._playerEffects[UUID.fromString(it.first)] =
-                EffectManager.deserialize(plugin, it.second)
-            }
-            val globalEffects = data["global_effects"] as List<Map<String, Any>>?
-            globalEffects?.forEach { manager.addEffect(Effect.deserialize(it)) }
-            return manager
-        }
+        // shouldn't need this
+//        logger.info("Loading effects for ${e.player.name}")
+//        val em = fileConfiguration.getSerializable("players.${e.player.uniqueId}", EffectManager::class.java)
+//        if (em != null) {
+//            _playerEffects[e.player.uniqueId] = em
+//            logger.warn("Effects for ${e.player.name} were not loaded")
+//        } else {
+//            logger.info("No effects to load for ${e.player.name}")
+//            _playerEffects[e.player.uniqueId] = EffectManager(plugin)
+//        }
+
+//        val em = linkedFile?.second?.getSerializable("effects.player_effects.${e.player.uniqueId}", EffectManager::class.java)
+//        if (em != null) {
+//            _playerEffects[e.player.uniqueId] = em
+//            logger.info("Loaded effects for ${e.player.name}")
+//        } else {
+//            _playerEffects[e.player.uniqueId] = EffectManager(plugin)
+//            logger.info("No effects to load for ${e.player.name}")
+//        }
     }
+
+// we will need this later for adding and removing listeners maybe, but not now
+//    @EventHandler
+//    fun onPlayerLeave(e: PlayerQuitEvent) {
+//        val em = _playerEffects.remove(e.player.uniqueId)
+//        if (em != null) {
+//            linkedFile?.second?.set("effects.player_effects.${e.player.uniqueId}", em.serialize())
+//            logger.info("Saved effects for ${e.player.name}")
+//        } else {
+//            logger.info("No effects to save for ${e.player.name}")
+//        }
+//    }
+
 }

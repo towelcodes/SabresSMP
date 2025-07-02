@@ -5,7 +5,7 @@ import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
 
 
-class TotemCooldownEffect(duration: Long?) : Effect(duration) {
+class TotemCooldownEffect(duration: Int?) : Effect(duration) {
     override val name = "Totem Cooldown"
     override val icon = "C"
     override val color = "&8"

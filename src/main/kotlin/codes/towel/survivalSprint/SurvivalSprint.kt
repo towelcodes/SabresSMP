@@ -1,6 +1,5 @@
 package codes.towel.survivalSprint
 
-import codes.towel.survivalSprint.effect.Effect
 import codes.towel.survivalSprint.effect.GlobalEffectManager
 import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
@@ -74,7 +73,11 @@ class SurvivalSprint : JavaPlugin() {
     lateinit var effectManager: GlobalEffectManager
 
     override fun onEnable() {
-        Effect.registerEffects()
+//        ConfigurationSerialization.registerClass(Effect::class.java)
+//        ConfigurationSerialization.registerClass(EffectManager::class.java)
+//        ConfigurationSerialization.registerClass(GlobalEffectManager::class.java)
+//        Effect.registerEffects()
+
         saveDefaultConfig()
         serverConf = ServerConfiguration.load(config)
 
@@ -82,8 +85,11 @@ class SurvivalSprint : JavaPlugin() {
         serverState = ServerState.load(this, serverStateFile, serverConf)
 
         // initialize the effect manager
-        val playerDataFile = File(dataFolder, "players.yml")
-        effectManager = GlobalEffectManager.loadFrom(this, playerDataFile)
+        val effectDataFile = File(dataFolder, "effect.yml")
+        effectDataFile.createNewFile()
+        effectDataFile.reader().use { logger.info(it.readText()) }
+        effectManager = GlobalEffectManager(this, effectDataFile)
+//        effectManager = GlobalEffectManager.loadFrom(this, effectDataFile)
         server.pluginManager.registerEvents(effectManager, this)
 //        server.pluginManager.registerEvents(EffectListener(effectManager), this)
 

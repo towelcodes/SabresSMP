@@ -1,12 +1,12 @@
 package codes.towel.survivalSprint.effect
 
-import org.bukkit.configuration.serialization.ConfigurationSerializable
-import org.bukkit.configuration.serialization.ConfigurationSerialization
 import org.bukkit.event.Event
 import java.util.*
 
 /// Duration is relative to the start time; should be compared when loading
-abstract class Effect(val duration: Long?) : ConfigurationSerializable {
+
+// TODO change data type to long
+abstract class Effect(val duration: Int?) {
     abstract val name: String
     abstract val icon: String
     abstract val color: String
@@ -25,13 +25,13 @@ abstract class Effect(val duration: Long?) : ConfigurationSerializable {
         }
     }
 
-    val remaining: Long? get() = this.end?.let { end ->
-        end.time - System.currentTimeMillis()
+    val remaining: Int? get() = this.end?.let { end ->
+        (end.time - System.currentTimeMillis()).toInt()
     }
 
     abstract val relevantEvents: Map<Class<out Event>, (Event) -> Unit>
 
-    override fun serialize(): MutableMap<String, Any> {
+    fun serialize(): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
         // make the duration the time remaining
         map["duration"] = this.start.compareTo(this.end)
@@ -42,15 +42,20 @@ abstract class Effect(val duration: Long?) : ConfigurationSerializable {
     companion object {
         @JvmStatic
         fun deserialize(data: Map<String, Any>): Effect {
-            val duration = data["duration"] as Long?
+            var duration = data["duration"] as Int?
+            if (duration != null) {
+                if (duration < 0) {
+                    duration = null
+                }
+            }
             return when (val className = data["class"] as String) {
                 "TotemCooldownEffect" -> TotemCooldownEffect(duration)
                 else -> throw IllegalArgumentException("Unknown effect class: $className")
             }
         }
 
-        fun registerEffects() {
-            ConfigurationSerialization.registerClass(TotemCooldownEffect::class.java)
-        }
+//        fun registerEffects() {
+//            ConfigurationSerialization.registerClass(TotemCooldownEffect::class.java)
+//        }
     }
 }
