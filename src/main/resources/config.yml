@@ -23,5 +23,24 @@ border_shrink: 1000
 # border shrink speed, in blocks per second
 border_shrink_speed: 1
 
+# primary world name
+primary_world: "world"
+
+# nether world name
+nether_world: "world_nether"
+
+# how close to the broder a player must be to be warned (blocks)
+border_warning_distance: 50
+
+# unix epoch of the server start (to calculate the day)
+start_time: 1752243721
+
+# unix epoch of when the border will stop
+total_days: 14
+
+# allow border to shrink while server is offline
+# FIXME NOT IMPLEMENTED
+# offline_border_shrink: false
+
 # do not edit this manually
 version: 1

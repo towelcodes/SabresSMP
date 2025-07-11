@@ -15,6 +15,11 @@ data class ServerConfiguration(
     val initialBorder: Int,
     val borderShrink: Int,
     val borderShrinkSpeed: Int,
+    val primaryWorld: String,
+    val netherWorld: String,
+    val warningDistance: Int,
+    val startTime: Int,
+    val totalDays: Int
 ) {
     companion object {
         fun load(file: FileConfiguration): ServerConfiguration {
@@ -26,6 +31,11 @@ data class ServerConfiguration(
                 file.getInt("initial_border"),
                 file.getInt("border_shrink"),
                 file.getInt("border_shrink_speed"),
+                file.getString("primary_world") ?: "world",
+                file.getString("nether_world") ?: "world_nether",
+                file.getInt("warning_distance"),
+                file.getInt("start_time"),
+                file.getInt("totalDays")
             )
         }
     }
@@ -36,9 +46,20 @@ data class ServerState(
     val file: File,
     val plugin: JavaPlugin
 ) {
-    var borderPos: Int
-        get() = fileConf.getInt("border_pos")
-        set(value) { fileConf.set("border_pos", value) }
+    var borderSize: Double
+        get() = fileConf.getDouble("border_size")
+        set(value) { fileConf.set("border_size", value) }
+
+    /**
+     * Manually set by host
+     */
+    var borderMoving: Boolean
+        get() = fileConf.getBoolean("border_moving")
+        set(value) { fileConf.set("border_moving", value) }
+
+    /**
+     * This is for convenience and should be updated by the BorderManager
+     */
     var day: Int
         get() = fileConf.getInt("day")
         set(value) { fileConf.set("day", value) }
@@ -49,6 +70,7 @@ data class ServerState(
             val fileConf = YamlConfiguration.loadConfiguration(file)
             fileConf.addDefaults(mapOf(
                 "border_pos" to serverConf.initialBorder,
+                "border_moving" to false,
                 "day" to 0))
             return ServerState(
                 fileConf,
@@ -72,6 +94,26 @@ class SurvivalSprint : JavaPlugin() {
     lateinit var serverState: ServerState
     lateinit var effectManager: GlobalEffectManager
 
+    fun saveDefaultLang(): FileConfiguration {
+        val resource = getResource("lang.yml")
+        val outFile = File(dataFolder, "lang.yml")
+        if (!outFile.exists()) {
+            outFile.createNewFile()
+            try {
+                resource.use { input ->
+                    outFile.outputStream().use { output ->
+                        input!!.copyTo(output)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.severe("Failed to copy lang.yml. Unloading plugin...")
+                e.printStackTrace()
+                server.pluginManager.disablePlugin(this)
+            }
+        }
+        return YamlConfiguration.loadConfiguration(outFile)
+    }
+
     override fun onEnable() {
 //        ConfigurationSerialization.registerClass(Effect::class.java)
 //        ConfigurationSerialization.registerClass(EffectManager::class.java)
@@ -79,6 +121,7 @@ class SurvivalSprint : JavaPlugin() {
 //        Effect.registerEffects()
 
         saveDefaultConfig()
+        val lang = saveDefaultLang()
         serverConf = ServerConfiguration.load(config)
 
         val serverStateFile = File(dataFolder, "state.yml")
