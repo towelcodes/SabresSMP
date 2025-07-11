@@ -14,8 +14,8 @@ import java.util.*
 /**
  * handles effects, as well as removing effects on expiry
  */
-open class EffectManager(val plugin: JavaPlugin) {
-    private val _effects = mutableMapOf<Effect, BukkitTask?>()
+open class EffectManager(protected val plugin: JavaPlugin) {
+    private val _effects = mutableMapOf<Effect, BukkitTask?>() // we could use an Optional here instead to make function clearer
     val effects: List<Effect> get() = _effects.keys.toList()
 
     fun addEffect(effect: Effect) {
@@ -62,7 +62,7 @@ open class EffectManager(val plugin: JavaPlugin) {
 }
 
 class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(plugin), Listener {
-    private val logger = LoggerFactory.getLogger("GlobalEffectManager:${hashCode()}")
+    private val logger = LoggerFactory.getLogger("SS.GlobalEffectManager")
 
     private val _playerEffects = mutableMapOf<UUID, EffectManager>()
 
@@ -70,15 +70,10 @@ class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(pl
 
     val playerEffects: Map<UUID, EffectManager> get() = _playerEffects.toMap()
 
-    private val effectListener: EffectListener = EffectListener(this)
+    private val effectDispatcher: EffectDispatcher = EffectDispatcher(this)
 
     init {
-        plugin.server.pluginManager.registerEvents(effectListener, plugin)
-
-        logger.info("keys: ${fileConfiguration.getKeys(true)}")
-        logger.info("root keys: ${fileConfiguration.getKeys(false)}")
-        logger.info(fileConfiguration.toString())
-        logger.info(fileConfiguration.saveToString())
+        plugin.server.pluginManager.registerEvents(effectDispatcher, plugin)
 
         // deserialize global em from file
         val global = fileConfiguration.getMapList("global")
@@ -90,7 +85,6 @@ class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(pl
         }
 
         val players = fileConfiguration.getConfigurationSection("player")
-//        val players = fileConfiguration.get("player")
         if (players != null) {
             logger.info("Loading player effects...")
             logger.info(players.toString())
@@ -102,22 +96,20 @@ class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(pl
             logger.info("No player effects are present")
         }
         // create timer to save to file automatically
-//        object : BukkitRunnable() {
-//            override fun run() {
-//                save()
-//            }
-//        }.runTaskTimer(plugin, 40, 600) // TODO: make configurable
+        object : BukkitRunnable() {
+            override fun run() {
+                save()
+            }
+        }.runTaskTimer(plugin, 40, 600) // TODO: make configurable
     }
 
     fun save() : Boolean {
-        logger.info("Saving effects...")
         fileConfiguration.set("global", this.serialize())
         val playerSection = fileConfiguration.createSection("player")
         for ((uuid, em) in _playerEffects) {
             playerSection.set(uuid.toString(), em.serialize())
         }
         fileConfiguration.save(file)
-        logger.info("Saved effects to $file")
         return true
     }
 
@@ -149,26 +141,6 @@ class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(pl
             // TODO we need to pause counting for effects that do not persist !!
             return
         }
-
-        // shouldn't need this
-//        logger.info("Loading effects for ${e.player.name}")
-//        val em = fileConfiguration.getSerializable("players.${e.player.uniqueId}", EffectManager::class.java)
-//        if (em != null) {
-//            _playerEffects[e.player.uniqueId] = em
-//            logger.warn("Effects for ${e.player.name} were not loaded")
-//        } else {
-//            logger.info("No effects to load for ${e.player.name}")
-//            _playerEffects[e.player.uniqueId] = EffectManager(plugin)
-//        }
-
-//        val em = linkedFile?.second?.getSerializable("effects.player_effects.${e.player.uniqueId}", EffectManager::class.java)
-//        if (em != null) {
-//            _playerEffects[e.player.uniqueId] = em
-//            logger.info("Loaded effects for ${e.player.name}")
-//        } else {
-//            _playerEffects[e.player.uniqueId] = EffectManager(plugin)
-//            logger.info("No effects to load for ${e.player.name}")
-//        }
     }
 
 // we will need this later for adding and removing listeners maybe, but not now

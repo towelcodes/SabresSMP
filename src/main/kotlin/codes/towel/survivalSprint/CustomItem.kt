@@ -1,6 +1,8 @@
 package codes.towel.survivalSprint
 
+import io.papermc.paper.datacomponent.item.ItemLore.lore
 import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.attribute.Attribute
@@ -28,7 +30,7 @@ val map = mapOf(
             setCustomModelDataComponent(customModelDataComponent.apply {
                 strings = listOf("smoke_sabre")
             })
-            displayName(Component.text("Smoke Sabre"))
+            displayName(Component.text("Sabre of Smoke"))
             setRarity(ItemRarity.RARE)
             setEnchantmentGlintOverride(true)
             addEnchantment(Enchantment.FIRE_ASPECT, 2)
@@ -41,7 +43,7 @@ val map = mapOf(
                 AttributeModifier(NamespacedKey("ss", "smoke_sabre"), -2.4, AttributeModifier.Operation.ADD_NUMBER)
             )
             lore(listOf(
-                Component.text("skibidi sigmaj"),
+                Component.text("Once breathed upon by Shade.").color(NamedTextColor.GRAY),
             ))
             val effects = listOf("FireChargeInteract")
             persistentDataContainer.set(NamespacedKey("ss", "equip_effects"), PersistentDataType.LIST.strings(), effects)

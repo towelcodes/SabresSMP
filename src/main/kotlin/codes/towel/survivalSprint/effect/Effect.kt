@@ -48,6 +48,7 @@ abstract class Effect(val duration: Int?) {
                     duration = null
                 }
             }
+            // TODO add other effects
             return when (val className = data["class"] as String) {
                 "TotemCooldownEffect" -> TotemCooldownEffect(duration)
                 else -> throw IllegalArgumentException("Unknown effect class: $className")

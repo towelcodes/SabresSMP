@@ -1,5 +1,6 @@
 package codes.towel.survivalSprint
 
+import codes.towel.survivalSprint.effect.FireChargeInteractEffect
 import codes.towel.survivalSprint.effect.GlobalEffectManager
 import codes.towel.survivalSprint.effect.TotemCooldownEffect
 import org.bukkit.Bukkit
@@ -27,8 +28,16 @@ class ManagementCommand(val em: GlobalEffectManager) : CommandExecutor {
             }
         }
 
-        else if (args[0] == "effect" && args.size > 1) {
-            Bukkit.getPlayer(args[1])?.uniqueId?.let { em.addPlayerEffect(it, TotemCooldownEffect(100000)) }
+        else if (args[0] == "effect" && args.size > 3) {
+            val effect = when (args[1].lowercase()) {
+                "totemcooldown" -> TotemCooldownEffect(args[2].toInt())
+                "firechargeinteract" -> FireChargeInteractEffect(args[2].toInt())
+                else -> {
+                    sender.sendMessage("Unknown effect: ${args[1]}")
+                    return false
+                }
+            }
+            Bukkit.getPlayer(args[1])?.uniqueId?.let { em.addPlayerEffect(it, effect) }
             sender.sendMessage("Applied effect to ${args[1]}")
             return true
         }
