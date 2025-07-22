@@ -9,10 +9,10 @@ import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
-class ManagementCommand(val em: GlobalEffectManager) : CommandExecutor {
+class ManagementCommand(val em: GlobalEffectManager, val borderManager: BorderManager) : CommandExecutor {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
-            sender.sendMessage("Usage: /ss <give|effect|effectget|save> [args]")
+            sender.sendMessage("Usage: /ss <give|effect|effectget|save|border> [args]")
             return false
         }
 
@@ -29,11 +29,11 @@ class ManagementCommand(val em: GlobalEffectManager) : CommandExecutor {
         }
 
         else if (args[0] == "effect" && args.size > 3) {
-            val effect = when (args[1].lowercase()) {
-                "totemcooldown" -> TotemCooldownEffect(args[2].toInt())
-                "firechargeinteract" -> FireChargeInteractEffect(args[2].toInt())
+            val effect = when (args[2].lowercase()) {
+                "totemcooldown" -> TotemCooldownEffect(args[3].toInt())
+                "firechargeinteract" -> FireChargeInteractEffect(args[3].toInt())
                 else -> {
-                    sender.sendMessage("Unknown effect: ${args[1]}")
+                    sender.sendMessage("Unknown effect: ${args[2]}")
                     return false
                 }
             }
@@ -52,6 +52,16 @@ class ManagementCommand(val em: GlobalEffectManager) : CommandExecutor {
         else if (args[0] == "save") {
             em.save()
             sender.sendMessage("Saved effects")
+            return true
+        }
+
+        else if (args[0] == "enableborder") {
+            borderManager.enableBorderMovement()
+            return true
+        }
+
+        else if (args[0] == "disableborder") {
+            borderManager.stopBorderMovement()
             return true
         }
 

@@ -25,7 +25,7 @@ open class EffectManager(protected val plugin: JavaPlugin) {
                     plugin.logger.info("Removing effect ${effect.javaClass.simpleName} (expired)")
                     _effects.remove(effect)
                 }
-            }.runTaskLater(plugin, effect.duration.toLong())
+            }.runTaskLater(plugin, (effect.duration * 20).toLong())
             _effects[effect] = task
         } else {
             _effects[effect] = null
@@ -124,7 +124,10 @@ class GlobalEffectManager(plugin: JavaPlugin, val file: File) : EffectManager(pl
 
     fun getPlayerEffects(player: UUID): List<Effect> {
         // TODO add global effects
-        return this._playerEffects[player]!!.effects
+        if (this._playerEffects.containsKey(player)) {
+            return this._playerEffects[player]!!.effects
+        }
+        return emptyList()
     }
 
     fun removePlayerEffect(player: UUID, effect: Effect) {

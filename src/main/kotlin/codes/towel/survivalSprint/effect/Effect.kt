@@ -31,10 +31,12 @@ abstract class Effect(val duration: Int?) {
 
     abstract val relevantEvents: Map<Class<out Event>, (Event) -> Unit>
 
+    //FIXME  whenever i serialize to YAML, the duration is always saved as -1, even when a duration is given. can you help me debug
+
     fun serialize(): Map<String, Any> {
         val map = mutableMapOf<String, Any>()
         // make the duration the time remaining
-        map["duration"] = this.start.compareTo(this.end)
+        map["duration"] = this.end?.let { this.start.compareTo(it) } ?: -1
         map["class"] = this.javaClass.simpleName
         return map
     }

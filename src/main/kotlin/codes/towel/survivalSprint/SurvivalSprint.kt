@@ -51,11 +51,25 @@ data class ServerState(
         set(value) { fileConf.set("border_size", value) }
 
     /**
-     * Manually set by host
+     * Permits border movement, false by default
      */
     var borderMoving: Boolean
         get() = fileConf.getBoolean("border_moving")
         set(value) { fileConf.set("border_moving", value) }
+
+    /**
+     * Current target border size; when reached it will stop moving
+     */
+    var borderTarget: Int
+        get() = fileConf.getInt("border_target")
+        set(value) { fileConf.set("border_target", value) }
+
+    /**
+     * How much the border shrinks per second
+     */
+    var borderShrinkPerSecond: Double
+        get() = fileConf.getDouble("border_shrink_per_second")
+        set(value) { fileConf.set("border_shrink_per_second", value) }
 
     /**
      * This is for convenience and should be updated by the BorderManager
@@ -71,6 +85,8 @@ data class ServerState(
             fileConf.addDefaults(mapOf(
                 "border_pos" to serverConf.initialBorder,
                 "border_moving" to false,
+                "border_target" to serverConf.initialBorder,
+                "border_shrink_per_second" to 0.0,
                 "day" to 0))
             return ServerState(
                 fileConf,
@@ -93,6 +109,8 @@ class SurvivalSprint : JavaPlugin() {
     lateinit var serverConf: ServerConfiguration
     lateinit var serverState: ServerState
     lateinit var effectManager: GlobalEffectManager
+    lateinit var lang: FileConfiguration
+    lateinit var borderManager: BorderManager
 
     fun saveDefaultLang(): FileConfiguration {
         val resource = getResource("lang.yml")
@@ -121,7 +139,7 @@ class SurvivalSprint : JavaPlugin() {
 //        Effect.registerEffects()
 
         saveDefaultConfig()
-        val lang = saveDefaultLang()
+        lang = saveDefaultLang()
         serverConf = ServerConfiguration.load(config)
 
         val serverStateFile = File(dataFolder, "state.yml")
@@ -136,7 +154,10 @@ class SurvivalSprint : JavaPlugin() {
         server.pluginManager.registerEvents(effectManager, this)
 //        server.pluginManager.registerEvents(EffectListener(effectManager), this)
 
-        getCommand("ss")?.setExecutor(ManagementCommand(effectManager))
+        // initialize the border manager
+        borderManager = BorderManager(this, serverConf, serverState, lang)
+
+        getCommand("ss")?.setExecutor(ManagementCommand(effectManager, borderManager))
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             SSPlaceholderExpansion(this, serverConf, serverState, effectManager).register()

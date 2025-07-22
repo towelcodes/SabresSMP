@@ -5,13 +5,16 @@ import org.bukkit.Bukkit
 import org.bukkit.Sound
 import org.bukkit.WorldBorder
 import org.bukkit.configuration.file.FileConfiguration
+import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.scheduler.BukkitTask
 import org.slf4j.LoggerFactory
 import java.time.ZonedDateTime
 
-class BorderManager(private val config: ServerConfiguration, private val state: ServerState, private val lang: FileConfiguration) {
+class BorderManager(private val plugin: SurvivalSprint, private val config: ServerConfiguration, private val state: ServerState, private val lang: FileConfiguration) {
     private val logger = LoggerFactory.getLogger("SS.BorderManager")
-    private lateinit var worldBorder: WorldBorder
-    private lateinit var netherBorder: WorldBorder
+    private var worldBorder: WorldBorder
+    private var netherBorder: WorldBorder
+    private var updateTask: BukkitTask? = null
 
     init {
         // will throw an error if either worlds don't exist
@@ -35,6 +38,27 @@ class BorderManager(private val config: ServerConfiguration, private val state: 
             warningTime = 0
             warningDistance = config.warningDistance
         }
+
+        // set up the border movement
+        if (state.borderMoving) {
+            enableBorderMovement()
+        }
+    }
+
+    fun enableBorderMovement() {
+        logger.info("Starting border movement")
+        updateTask = object : BukkitRunnable() {
+            override fun run() {
+                update()
+            }
+        }.runTaskTimer(plugin, 20L, 20L)
+        state.borderMoving = true
+    }
+
+    fun stopBorderMovement() {
+        logger.info("Stopping border movement")
+        updateTask?.cancel()
+        state.borderMoving = false
     }
 
     /**
@@ -74,12 +98,29 @@ class BorderManager(private val config: ServerConfiguration, private val state: 
         for (player in Bukkit.getOnlinePlayers()) {
             player.playSound(player.location, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f)
         }
+
+        if (day == config.totalDays) {
+            logger.info("Final day reached, stopping automatic border movement")
+            state.borderMoving = false
+        }
     }
 
+    private var lastHour: Int? = null
     /**
      * should be called each second (20 server ticks)
      */
-    fun update() {
-        // todo
+    private fun update() {
+        if (state.borderMoving) {
+            val perDay = config.borderShrink
+            val perSecond = perDay / (24.0 * 60.0 * 60.0)
+            worldBorder.size -= perSecond
+            netherBorder.size -= (perSecond * 8.0)
+            state.borderSize = worldBorder.size
+        }
+
+        if (lastHour != null && lastHour != ZonedDateTime.now().hour) {
+            calcDay(ZonedDateTime.now())
+        }
+        lastHour = ZonedDateTime.now().hour
     }
 }

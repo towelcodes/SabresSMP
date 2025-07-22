@@ -18,10 +18,12 @@ day_changeover_hour: 0
 initial_border: 25000
 
 # blocks border will shrink each day
-border_shrink: 1000
+# border_shrink: 1000
 
 # border shrink speed, in blocks per second
-border_shrink_speed: 1
+# wait that's a stupid measure
+# so i'm just going to calc from the border_shrink
+#border_shrink_speed: 1
 
 # primary world name
 primary_world: "world"
@@ -33,10 +35,10 @@ nether_world: "world_nether"
 border_warning_distance: 50
 
 # unix epoch of the server start (to calculate the day)
-start_time: 1752243721
+start_time: 1753185412
 
-# unix epoch of when the border will stop
-total_days: 14
+# unix epoch of when the border will stop automatically
+#total_days: 14
 
 # allow border to shrink while server is offline
 # FIXME NOT IMPLEMENTED
