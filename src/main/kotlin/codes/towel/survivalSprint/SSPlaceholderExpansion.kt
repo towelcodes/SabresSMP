@@ -8,7 +8,6 @@ import org.bukkit.plugin.java.JavaPlugin
 class SSPlaceholderExpansion(private val plugin: JavaPlugin,
                              val conf: ServerConfiguration,
                              val state: ServerState,
-                             val em: GlobalEffectManager
 ) : PlaceholderExpansion() {
     override fun getIdentifier(): String {
         return "ss"

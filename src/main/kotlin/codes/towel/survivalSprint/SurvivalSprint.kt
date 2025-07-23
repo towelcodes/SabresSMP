@@ -1,6 +1,5 @@
 package codes.towel.survivalSprint
 
-import codes.towel.survivalSprint.effect.GlobalEffectManager
 import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
@@ -108,9 +107,9 @@ data class ServerState(
 class SurvivalSprint : JavaPlugin() {
     lateinit var serverConf: ServerConfiguration
     lateinit var serverState: ServerState
-    lateinit var effectManager: GlobalEffectManager
     lateinit var lang: FileConfiguration
     lateinit var borderManager: BorderManager
+    var customResources: CustomResourcesManager? = null
 
     fun saveDefaultLang(): FileConfiguration {
         val resource = getResource("lang.yml")
@@ -133,11 +132,6 @@ class SurvivalSprint : JavaPlugin() {
     }
 
     override fun onEnable() {
-//        ConfigurationSerialization.registerClass(Effect::class.java)
-//        ConfigurationSerialization.registerClass(EffectManager::class.java)
-//        ConfigurationSerialization.registerClass(GlobalEffectManager::class.java)
-//        Effect.registerEffects()
-
         saveDefaultConfig()
         lang = saveDefaultLang()
         serverConf = ServerConfiguration.load(config)
@@ -145,22 +139,17 @@ class SurvivalSprint : JavaPlugin() {
         val serverStateFile = File(dataFolder, "state.yml")
         serverState = ServerState.load(this, serverStateFile, serverConf)
 
-        // initialize the effect manager
-        val effectDataFile = File(dataFolder, "effect.yml")
-        effectDataFile.createNewFile()
-        effectDataFile.reader().use { logger.info(it.readText()) }
-        effectManager = GlobalEffectManager(this, effectDataFile)
-//        effectManager = GlobalEffectManager.loadFrom(this, effectDataFile)
-        server.pluginManager.registerEvents(effectManager, this)
-//        server.pluginManager.registerEvents(EffectListener(effectManager), this)
-
         // initialize the border manager
         borderManager = BorderManager(this, serverConf, serverState, lang)
 
-        getCommand("ss")?.setExecutor(ManagementCommand(effectManager, borderManager))
+        if (config.getBoolean("enable_custom_resources")) {
+            customResources = CustomResourcesManager(this)
+        }
+
+        getCommand("ss")?.setExecutor(ManagementCommand(customResources?.effectManager, borderManager))
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            SSPlaceholderExpansion(this, serverConf, serverState, effectManager).register()
+            SSPlaceholderExpansion(this, serverConf, serverState).register()
             logger.info("Hooked into PlaceholderAPI")
         }
     }
@@ -168,7 +157,7 @@ class SurvivalSprint : JavaPlugin() {
     override fun onDisable() {
         logger.info("Saving data...")
         serverState.save()
-        effectManager.save()
+        customResources?.disable()
         logger.info("Goodbye!")
     }
 }

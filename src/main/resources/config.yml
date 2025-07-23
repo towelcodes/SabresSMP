@@ -44,5 +44,7 @@ start_time: 1753185412
 # FIXME NOT IMPLEMENTED
 # offline_border_shrink: false
 
+enable_custom_resources: false
+
 # do not edit this manually
 version: 1

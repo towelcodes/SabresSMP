@@ -9,7 +9,7 @@ import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
-class ManagementCommand(val em: GlobalEffectManager, val borderManager: BorderManager) : CommandExecutor {
+class ManagementCommand(val em: GlobalEffectManager?, val borderManager: BorderManager) : CommandExecutor {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
             sender.sendMessage("Usage: /ss <give|effect|effectget|save|border> [args]")
@@ -37,20 +37,20 @@ class ManagementCommand(val em: GlobalEffectManager, val borderManager: BorderMa
                     return false
                 }
             }
-            Bukkit.getPlayer(args[1])?.uniqueId?.let { em.addPlayerEffect(it, effect) }
+            Bukkit.getPlayer(args[1])?.uniqueId?.let { em?.addPlayerEffect(it, effect) }
             sender.sendMessage("Applied effect to ${args[1]}")
             return true
         }
 
         else if (args[0] == "effectget" && args.size > 1) {
             val player = Bukkit.getPlayer(args[1]) ?: return false
-            em.getPlayerEffects(player.uniqueId).forEach { sender.sendMessage(it.toString()) }
+            em?.getPlayerEffects(player.uniqueId)?.forEach { sender.sendMessage(it.toString()) }
             sender.sendMessage("Got effects for ${args[1]}")
             return true
         }
 
         else if (args[0] == "save") {
-            em.save()
+            em?.save()
             sender.sendMessage("Saved effects")
             return true
         }
