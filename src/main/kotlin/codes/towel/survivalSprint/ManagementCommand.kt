@@ -3,6 +3,7 @@ package codes.towel.survivalSprint
 import codes.towel.survivalSprint.effect.FireChargeInteractEffect
 import codes.towel.survivalSprint.effect.GlobalEffectManager
 import codes.towel.survivalSprint.effect.TotemCooldownEffect
+import codes.towel.survivalSprint.item.CustomItemType
 import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor

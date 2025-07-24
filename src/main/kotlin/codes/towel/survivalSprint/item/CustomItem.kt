@@ -1,6 +1,5 @@
-package codes.towel.survivalSprint
+package codes.towel.survivalSprint.item
 
-import io.papermc.paper.datacomponent.item.ItemLore.lore
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.Material

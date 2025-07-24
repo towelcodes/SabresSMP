@@ -1,5 +1,6 @@
 package codes.towel.survivalSprint
 
+import codes.towel.survivalSprint.item.CustomResourcesManager
 import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration

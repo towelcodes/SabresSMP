@@ -1,5 +1,6 @@
-package codes.towel.survivalSprint
+package codes.towel.survivalSprint.item
 
+import codes.towel.survivalSprint.SurvivalSprint
 import codes.towel.survivalSprint.effect.GlobalEffectManager
 import java.io.File
 
