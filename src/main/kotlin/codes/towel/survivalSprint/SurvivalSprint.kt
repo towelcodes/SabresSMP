@@ -1,6 +1,7 @@
 package codes.towel.survivalSprint
 
 import codes.towel.survivalSprint.item.CustomResourcesManager
+import codes.towel.survivalSprint.util.Ref
 import org.bukkit.Bukkit
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.configuration.file.YamlConfiguration
@@ -13,8 +14,7 @@ data class ServerConfiguration(
     val playerInvulnerabilityOnFirstJoin: Int,
     val dayChangeoverHour: Int,
     val initialBorder: Int,
-    val borderShrink: Int,
-    val borderShrinkSpeed: Int,
+    val borderShrink: Double,
     val primaryWorld: String,
     val netherWorld: String,
     val warningDistance: Int,
@@ -29,8 +29,7 @@ data class ServerConfiguration(
                 file.getInt("player_invulnerability_on_first_join"),
                 file.getInt("day_changeover_hour"),
                 file.getInt("initial_border"),
-                file.getInt("border_shrink"),
-                file.getInt("border_shrink_speed"),
+                file.getDouble("border_shrink"),
                 file.getString("primary_world") ?: "world",
                 file.getString("nether_world") ?: "world_nether",
                 file.getInt("warning_distance"),
@@ -65,13 +64,6 @@ data class ServerState(
         set(value) { fileConf.set("border_target", value) }
 
     /**
-     * How much the border shrinks per second
-     */
-    var borderShrinkPerSecond: Double
-        get() = fileConf.getDouble("border_shrink_per_second")
-        set(value) { fileConf.set("border_shrink_per_second", value) }
-
-    /**
      * This is for convenience and should be updated by the BorderManager
      */
     var day: Int
@@ -79,14 +71,13 @@ data class ServerState(
         set(value) { fileConf.set("day", value) }
 
     companion object {
-        fun load(plugin: JavaPlugin, file: File, serverConf: ServerConfiguration): ServerState {
+        fun load(plugin: JavaPlugin, file: File, serverConf: Ref<ServerConfiguration>): ServerState {
             file.createNewFile()
             val fileConf = YamlConfiguration.loadConfiguration(file)
             fileConf.addDefaults(mapOf(
-                "border_size" to serverConf.initialBorder,
+                "border_size" to serverConf.value.initialBorder,
                 "border_moving" to false,
-                "border_target" to serverConf.initialBorder,
-                "border_shrink_per_second" to 0.0,
+                "border_target" to serverConf.value.initialBorder,
                 "day" to 0))
             return ServerState(
                 fileConf,
@@ -106,7 +97,7 @@ data class ServerState(
 }
 
 class SurvivalSprint : JavaPlugin() {
-    lateinit var serverConf: ServerConfiguration
+    lateinit var serverConf: Ref<ServerConfiguration>
     lateinit var serverState: ServerState
     lateinit var lang: FileConfiguration
     lateinit var borderManager: BorderManager
@@ -132,14 +123,15 @@ class SurvivalSprint : JavaPlugin() {
         return YamlConfiguration.loadConfiguration(outFile)
     }
 
-    fun loadConfig(): ServerConfiguration {
-        return ServerConfiguration.load(config)
+    fun updateConfig() {
+        reloadConfig()
+        serverConf.value = ServerConfiguration.load(config)
     }
 
     override fun onEnable() {
         saveDefaultConfig()
         lang = saveDefaultLang()
-        serverConf = ServerConfiguration.load(config)
+        serverConf = Ref(ServerConfiguration.load(config))
 
         val serverStateFile = File(dataFolder, "state.yml")
         serverState = ServerState.load(this, serverStateFile, serverConf)
@@ -151,7 +143,7 @@ class SurvivalSprint : JavaPlugin() {
             customResources = CustomResourcesManager(this)
         }
 
-        getCommand("ss")?.setExecutor(ManagementCommand(customResources?.effectManager, borderManager))
+        getCommand("ss")?.setExecutor(ManagementCommand(this, customResources?.effectManager, borderManager))
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             SSPlaceholderExpansion(this, serverConf, serverState).register()

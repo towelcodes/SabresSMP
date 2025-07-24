@@ -1,5 +1,6 @@
 package codes.towel.survivalSprint
 
+import codes.towel.survivalSprint.util.Ref
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.Sound
@@ -10,7 +11,7 @@ import org.bukkit.scheduler.BukkitTask
 import org.slf4j.LoggerFactory
 import java.time.ZonedDateTime
 
-class BorderManager(private val plugin: SurvivalSprint, private val config: ServerConfiguration, private val state: ServerState, private val lang: FileConfiguration) {
+class BorderManager(private val plugin: SurvivalSprint, private val config: Ref<ServerConfiguration>, private val state: ServerState, private val lang: FileConfiguration) {
     private val logger = LoggerFactory.getLogger("SS.BorderManager")
     private var worldBorder: WorldBorder
     private var netherBorder: WorldBorder
@@ -18,8 +19,8 @@ class BorderManager(private val plugin: SurvivalSprint, private val config: Serv
 
     init {
         // will throw an error if either worlds don't exist
-        val world = Bukkit.getWorld(config.primaryWorld)!!
-        val nether = Bukkit.getWorld(config.netherWorld)!!
+        val world = Bukkit.getWorld(config.value.primaryWorld)!!
+        val nether = Bukkit.getWorld(config.value.netherWorld)!!
 
         worldBorder = world.worldBorder
         netherBorder = nether.worldBorder
@@ -29,14 +30,14 @@ class BorderManager(private val plugin: SurvivalSprint, private val config: Serv
             damageAmount = 2.0
             damageBuffer = 2.0
             warningTime = 0
-            warningDistance = config.warningDistance
+            warningDistance = config.value.warningDistance
         }
         netherBorder.apply {
             size = state.borderSize / 4 // TODO test
             damageAmount = 2.0
             damageBuffer = 2.0
             warningTime = 0
-            warningDistance = config.warningDistance
+            warningDistance = config.value.warningDistance
         }
 
         // set up the border movement
@@ -67,11 +68,11 @@ class BorderManager(private val plugin: SurvivalSprint, private val config: Serv
      * return true if the day has changed
      */
     fun calcDay(date: ZonedDateTime): Boolean {
-        val totalDays = config.totalDays
+        val totalDays = config.value.totalDays
         val now = System.currentTimeMillis() / 1000
-        val actualDay = (now - config.startTime) / 24000
+        val actualDay = (now - config.value.startTime) / 24000
 
-        if (date.hour != config.dayChangeoverHour) {
+        if (date.hour != config.value.dayChangeoverHour) {
             return false
         }
 
@@ -99,7 +100,7 @@ class BorderManager(private val plugin: SurvivalSprint, private val config: Serv
             player.playSound(player.location, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f)
         }
 
-        if (day == config.totalDays) {
+        if (day == config.value.totalDays) {
             logger.info("Final day reached, stopping automatic border movement")
             state.borderMoving = false
         }
@@ -118,9 +119,7 @@ class BorderManager(private val plugin: SurvivalSprint, private val config: Serv
         logger.info("updating border")
         if (state.borderMoving) {
             logger.info("moving border")
-            val perDay = config.borderShrink
-            val perSecond = perDay / (24.0 * 60.0 * 60.0)
-            logger.info(perDay.toString())
+            val perSecond = config.value.borderShrink
             logger.info(perSecond.toString())
             worldBorder.size -= perSecond
             netherBorder.size -= (perSecond * 8.0)

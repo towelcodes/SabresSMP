@@ -10,7 +10,7 @@ import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
-class ManagementCommand(val em: GlobalEffectManager?, val borderManager: BorderManager) : CommandExecutor {
+class ManagementCommand(val plugin: SurvivalSprint, val em: GlobalEffectManager?, val borderManager: BorderManager) : CommandExecutor {
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
             sender.sendMessage("Usage: /ss <give|effect|effectget|save|border> [args]")
@@ -68,6 +68,20 @@ class ManagementCommand(val em: GlobalEffectManager?, val borderManager: BorderM
 
         else if(args[0] == "bordertarget" && args.size > 1) {
             borderManager.setBorderTarget(args[1].toInt())
+            return true
+        }
+
+        else if(args[0] == "reload") {
+            plugin.updateConfig()
+            sender.sendMessage("Reloaded config")
+            return true
+        }
+
+        else if(args[0] == "truereload") {
+            plugin.server.pluginManager.disablePlugin(plugin)
+            plugin.server.pluginManager.enablePlugin(plugin)
+            sender.sendMessage("Reloaded plugin")
+            return true
         }
 
         return false
