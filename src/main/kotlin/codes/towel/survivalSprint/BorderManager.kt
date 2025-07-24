@@ -105,20 +105,36 @@ class BorderManager(private val plugin: SurvivalSprint, private val config: Serv
         }
     }
 
+    fun setBorderTarget(target: Int) {
+        logger.info("setting border target to $target")
+        state.borderTarget = target
+    }
+
     private var lastHour: Int? = null
     /**
      * should be called each second (20 server ticks)
      */
     private fun update() {
+        logger.info("updating border")
         if (state.borderMoving) {
+            logger.info("moving border")
             val perDay = config.borderShrink
             val perSecond = perDay / (24.0 * 60.0 * 60.0)
+            logger.info(perDay.toString())
+            logger.info(perSecond.toString())
             worldBorder.size -= perSecond
             netherBorder.size -= (perSecond * 8.0)
             state.borderSize = worldBorder.size
+            logger.info(worldBorder.size.toString())
+        }
+
+        if (state.borderTarget > state.borderSize) {
+            logger.info("target reached, stopping")
+            stopBorderMovement()
         }
 
         if (lastHour != null && lastHour != ZonedDateTime.now().hour) {
+            logger.info("changing day")
             calcDay(ZonedDateTime.now())
         }
         lastHour = ZonedDateTime.now().hour

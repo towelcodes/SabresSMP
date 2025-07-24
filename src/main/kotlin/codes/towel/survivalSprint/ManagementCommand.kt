@@ -65,6 +65,10 @@ class ManagementCommand(val em: GlobalEffectManager?, val borderManager: BorderM
             return true
         }
 
+        else if(args[0] == "bordertarget" && args.size > 1) {
+            borderManager.setBorderTarget(args[1].toInt())
+        }
+
         return false
     }
 }

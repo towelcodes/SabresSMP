@@ -18,7 +18,7 @@ day_changeover_hour: 0
 initial_border: 25000
 
 # blocks border will shrink each day
-# border_shrink: 1000
+border_shrink: 1000
 
 # border shrink speed, in blocks per second
 # wait that's a stupid measure

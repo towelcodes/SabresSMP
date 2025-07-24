@@ -82,7 +82,7 @@ data class ServerState(
             file.createNewFile()
             val fileConf = YamlConfiguration.loadConfiguration(file)
             fileConf.addDefaults(mapOf(
-                "border_pos" to serverConf.initialBorder,
+                "border_size" to serverConf.initialBorder,
                 "border_moving" to false,
                 "border_target" to serverConf.initialBorder,
                 "border_shrink_per_second" to 0.0,
@@ -129,6 +129,10 @@ class SurvivalSprint : JavaPlugin() {
             }
         }
         return YamlConfiguration.loadConfiguration(outFile)
+    }
+
+    fun loadConfig(): ServerConfiguration {
+        return ServerConfiguration.load(config)
     }
 
     override fun onEnable() {
