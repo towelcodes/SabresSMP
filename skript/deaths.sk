@@ -1,0 +1,46 @@
+function checkDeaths(player: player) :: boolean:
+    if {deaths::%{_player}'s uuid%} is 2:
+        if {_player} does not have permission "death.ascend":
+            kick {_player} because "&c&lGAME OVER%newline%&cYou were finally killed by %{killer::%{_player}'s uuid%}%.%newline%%newline%&7Don't worry!%newline%&7Season 2.5 is running in late August."
+            return true
+        else:
+            send "%{_player}% can ascend death" to console
+    return false
+
+on death of player:
+    attacker is player
+    victim is player
+    {gloablpvp.enabled} is true
+    {singlepvp.disabled::%victim's uuid%} is not set
+    add 1 to {deaths::%victim's uuid%}
+    send "%victim% has died %{deaths::%victim's uuid%}% times" to console
+    set {killer::%victim's uuid%} to attacker's name
+    set {_res} to checkDeaths(victim)
+    if {_res} is true:
+        play sound "entity.enderdragon.growl" to all players
+        broadcast "&c&lFINAL KILL &r%victim% was finally killed and can no longer join."
+
+on join:
+    set the maximum health of player to 15
+    checkDeaths(player)
+
+command /setdeaths <offlineplayer> <number>:
+    permission: deaths.set
+    trigger:
+        set {deaths::%arg 1's uuid%} to arg 2
+        send "Set %arg 1%'s deaths to %arg 2%" to sender
+        checkDeaths(arg 1)
+
+placeholderapi placeholder with the prefix "gdeath":
+    if the identifier is "lives":
+        set {_id} to player's uuid
+        if {deaths::%{_id}%} is not set:
+            set the result to "&c❤&c❤&7❤"
+        else if {deaths::%{_id}%} is 0:
+            set the result to "&c❤&c❤&7❤"
+        else if {deaths::%player's uuid%} is 1:
+            set the result to "&c❤&7❤&7❤"
+        else if {deaths::%player's uuid%} is -1:
+            set the result to "&c❤&c❤&c❤"
+        else:
+            set the result to "&7❤&7❤&7❤"
