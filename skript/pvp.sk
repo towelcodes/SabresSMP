@@ -1,4 +1,4 @@
-on skript load:
+on script load:
     load yaml "plugins/Skript/globalpvp.yml" as "glpvp"
     set {_saved} to yaml value "pvp_enabled" from "glpvp"
     if {_saved} is set:
@@ -8,6 +8,7 @@ on skript load:
     delete {globalpvptimer.duration}
     delete {globalpvptimer.remaining}
     delete {globalpvptimer.action}
+    set {graceperiod_disable} to false
 
 on join:
     {joined::%player's uuid%} is not set
@@ -30,20 +31,23 @@ on damage of entity by entity:
         cancel event
 
 function gracePeriod(player: player, duration: number):
-    send "giving grace period to %{_player}% for %{_duration}%s" to console
-    send "&a&lGRACE PERIOD &rYou have been granted a grace period, as you joined late. Your PVP will be disabled." to {_player}
-    send "Your grace period ticks down &aeven when you are offline&f, so make use of it." to {_player}
-    set {singlepvp.disabled::%{_player}'s uuid%} to {_duration}
-    loop {_duration} times:
-        if {singlepvp.stop::%{_player}'s uuid%} is set:
-            delete {singlepvp.stop::%{_player}'s uuid%}
-            delete {singlepvp.disabled::%{_player}'s uuid%}
-            stop
-        wait 1 second
-        subtract 1 from {singlepvp.disabled::%{_player}'s uuid%}
-    delete {singlepvp.disabled::%{_player}'s uuid%}
-    send "&c&lYour PVP is now active!" to {_player}
-    play sound "entity.wither.spawn" to {_player}
+    if {graceperiod_disable} is true:
+        send "not giving grace period to %{_player}% because it is disabled" to console
+    else:
+        send "giving grace period to %{_player}% for %{_duration}%s" to console
+        send "&a&lGRACE PERIOD &rYou have been granted a grace period, as you joined late. Your PVP will be disabled." to {_player}
+        send "Your grace period ticks down &aeven when you are offline&f, so make use of it." to {_player}
+        set {singlepvp.disabled::%{_player}'s uuid%} to {_duration}
+        loop {_duration} times:
+            if {singlepvp.stop::%{_player}'s uuid%} is set:
+                delete {singlepvp.stop::%{_player}'s uuid%}
+                delete {singlepvp.disabled::%{_player}'s uuid%}
+                stop
+            wait 1 second
+            subtract 1 from {singlepvp.disabled::%{_player}'s uuid%}
+        delete {singlepvp.disabled::%{_player}'s uuid%}
+        send "&c&lYour PVP is now active!" to {_player}
+        play sound "entity.wither.spawn" to {_player}
 
 function setPvpState(enabled: boolean):
     set {globalpvp.enabled} to {_enabled}
@@ -62,6 +66,12 @@ function pad(n: number) :: string:
     return "%{_n}%"
 
 function displayTime(time: integer) :: string:
+    # set {_ts} to "%{_secs}% seconds" parsed as timespan
+
+    # set {_h} to floor({_ts}.hours + {_ts}.days * 24)
+    # set {_m} to {_ts}.minutes
+    # set {_s} to {_ts}.seconds
+
     set {_h} to floor({_time} / 3600)
     set {_m} to floor((mod({_time}, 3600)) / 60)
     set {_s} to mod({_time}, 60)
@@ -87,6 +97,11 @@ function displayTime(time: integer) :: string:
     # set {_out} to join {_time::*} with ":"
     # return "%{_out}%"
 
+command /grace <boolean>:
+    permission: globalpvp.grace
+    trigger:
+        set {graceperiod_disable} to arg 1
+
 command /greset <offlineplayer>:
     permission: globalpvp.reset
     trigger:
@@ -103,29 +118,30 @@ command /gpvp [<text>]:
         else:
             send "global pvp is %{globalpvp.enabled}%" to sender
 
-command /gpvptimer <text> <text>:
+command /gpvptimer <number> <text>:
     permission: globalpvp.timer
     trigger:
-        set {_timeArg::*} to split arg 1 at ":"
-        set {_unitCount} to size of {_timeArg::*}
+        # set {_timeArg::*} to split arg 1 at ":"
+        # set {_unitCount} to size of {_timeArg::*}
 
-        if {_unitCount} = 3:
-            set {_hours} to {_timeArg::1} parsed as integer
-            set {_minutes} to {_timeArg::2} parsed as integer
-            set {_seconds} to {_timeArg::3} parsed as integer
-        else if {_unitCount} = 2:
-            set {_hours} to 0
-            set {_minutes} to {_timeArg::1} parsed as integer
-            set {_seconds} to {_timeArg::2} parsed as integer
-        else if {_unitCount} = 1:
-            set {_hours} to 0
-            set {_minutes} to 0
-            set {_seconds} to {_timeArg::1} parsed as integer
-        else:
-            send "&cusage: /globalpvptimer <seconds|mm:ss|hh:mm:ss> <enable|disable>" to sender
-            stop
+        # if {_unitCount} = 3:
+        #     set {_hours} to {_timeArg::1} parsed as integer
+        #     set {_minutes} to {_timeArg::2} parsed as integer
+        #     set {_seconds} to {_timeArg::3} parsed as integer
+        # else if {_unitCount} = 2:
+        #     set {_hours} to 0
+        #     set {_minutes} to {_timeArg::1} parsed as integer
+        #     set {_seconds} to {_timeArg::2} parsed as integer
+        # else if {_unitCount} = 1:
+        #     set {_hours} to 0
+        #     set {_minutes} to 0
+        #     set {_seconds} to {_timeArg::1} parsed as integer
+        # else:
+        #     send "&cusage: /globalpvptimer <seconds|mm:ss|hh:mm:ss> <enable|disable>" to sender
+        #     stop
 
-        set {_total} to {_seconds} + ({_minutes} * 60) + ({_hours} * 3600)
+        # set {_total} to {_seconds} + ({_minutes} * 60) + ({_hours} * 3600)
+        set {_total} to arg 1
         if {_total} <= 0:
             send "&cduration must be > 0 seconds." to sender
             stop

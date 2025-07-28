@@ -1,0 +1,24 @@
+on script load:
+    set {day.start} to date(2025, 7, 26)
+    set {day.target} to 24
+
+function checkTime():
+    send "checking time" to console
+    set {_elapsed} to difference between now and {day.start}
+    set {_hr} to {day.start} formatted as "HH"
+    set {_hours} to hours of {_elapsed}
+    set {_diff} to ({day.target} / {_hr})
+    set {day.current} to floor(({_hours} - {_diff}) / 24)
+    send "%{day.start}% | %{day.target}% | %{_elapsed}% | %{_hr}% | %{_hours}% | %{_diff}%" to console
+    send "it is day %{day.current}%" to console
+
+every 30 minutes:
+    checkTime()
+
+command /checktime:
+    trigger:
+        checkTime()
+
+placeholderapi placeholder with the prefix "time":
+    if the identifier is "day":
+        set the result to {day.current}

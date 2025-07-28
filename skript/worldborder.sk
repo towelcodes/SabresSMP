@@ -1,86 +1,83 @@
-options:
-    world: "world"
-    nether: "world_nether"
-    # cx: 107
-    # cz: 26
+function lifeCrystal() :: itemstack:
+    set {_item} to nether star with custom model data "life_crystal"
+    # apply custom model data to {_item}:
+    #     strings: "life_crystal"
+    set name of {_item} to "&c&lLife Crystal &7(right click)"
+    set lore of {_item} to " &7- &fAdds &cone life &fto a player.%newline% &7- &fCan only be used &conce&f!"
+    return {_item}
 
-on skript load:
-    set {world} to world border of world({@world})
-    # set {nether} to world border of world({@wbnether})
+on load:
+    set {_lifecrystal} to lifeCrystal()
+    register new shaped recipe for {_lifecrystal} using diamond block, nether star, emerald block, nether star, netherite block, nether star, gold block, nether star and redstone block with id "sabres:life_crystal"
+    unlock custom recipe with id "sabres:life_crystal" for all players
 
-command /startshrink <number> <number> <number>:
-    permission: wb.admin
-    usage: /startshrink <start> <shrink/sec> <end>
-    trigger:
-        # set {world} to world border of world("world")
-        # set {nether} to world border of world("world_nether")
-        set {wb::rate} to arg 2
-        set {wb::target} to arg 3
-        # set diameter of world border {world} to arg 1
-        # set diameter of world border {nether} to (arg 1 / 8)
-        shrink world border of world {@world} to arg 1
-        shrink world border of world {@nether} to (arg 1 / 8)
-        send "moving wb started at %arg 1% to %arg 3% at %arg 2% blocks per second"
+on craft:
+    item is a nether star
+    name of item is "&c&lLife Crystal &7(right click)"
+    play sound "entity.wither.spawn" to all players
+    broadcast "&d%player% &dcrafted a &c&lLife Crystal&r&d!"
 
-command /stopshrink:
-    permission: wb.admin
-    trigger:
-        delete {wb::rate}
-        send "stopped wb moving"
-
-every 1 second:
-    if {wb::rate} is set:
-        set {_cur} to diameter of world border {world}
-        set {_new} to {_cur} - {wb::rate}
-        if {_new} <= {wb::target}:
-            send "world border shrink stopped" to console
-            delete {wb::rate}
-            delete {wb::stop}
-        else:
-            shrink world border of world {@world} to {_new} over 1 second
-            shrink world border of world {@nether} to ({_new} / 8) over 1 second
-            # set diameter of world border {world} to {_new}
-            # set diameter of world border {nether} to ({_new} / 8)
-
-function formatTimeBasic(sec: number) :: text:
-    if {_sec} >= 3600:
-        set {_h} to floor({_sec} / 3600)
-        return "%{_h}%h"
-    else if {_sec} >= 60:
-        set {_m} to floor({_sec} / 60)
-        return "%{_m}%m"
+on right click with nether star:
+    name of tool of player is "&c&lLife Crystal &7(right click)"
+    if {heart_use::%player's uuid%} is set:
+        play sound "entity.wither.break_block" to player
+        send "&cYou have already used a Life Crystal before!" to player
     else:
-        return "%floor({_sec})%s"
+        subtract 1 from {deaths::%player's uuid%}
+        set {heart_use::%player's uuid%} to true
+        play sound "entity.wither.ambient" to all players
+        broadcast "&d%player% &dused a &c&lLife Crystal&r&d!"
+        remove tool of player from player's inventory
 
-placeholderapi placeholder with the prefix "wb":
-    if the identifier is "size":
-        set the result to ceil(diameter of world border {world})
-    else if the identifier is "safe_until":
-        if {wb::rate} is not set:
-            set the result to "-2" # no movement
+function checkDeaths(player: player) :: boolean:
+    if {deaths::%{_player}'s uuid%} is 2:
+        if {_player} does not have permission "death.ascend":
+            kick {_player} because "&c&lGAME OVER%newline%&cYou were finally killed by %{killer::%{_player}'s uuid%}%.%newline%%newline%&7Don't worry!%newline%&7Season 2.5 is running in late August."
+            return true
         else:
-            set {_x} to player's x-coordinate
-            set {_z} to player's z-coordinate
-            set {_c} to {world}'s center
-            # set {_cx} to x-coordinate of {_c}
-            # set {_cz} to z-coordinate of {_c}
-            set {_cx} to 0
-            set {_cz} to 0
-            set {_size} to diameter of world border {world}
-            set {_r} to ({_size} / 2)
+            send "%{_player}% can ascend death" to console
+    return false
 
-            set {_dx} to abs({_x} - {_cx})
-            set {_dz} to abs({_z} - {_cz})
+on death of player:
+    attacker is player
+    victim is player
+    {globalpvp.enabled} is true
+    {singlepvp.disabled::%victim's uuid%} is not set
+    add 1 to {deaths::%victim's uuid%}
+    send "%victim% has died %{deaths::%victim's uuid%}% times" to console
+    set {killer::%victim's uuid%} to attacker's name
+    set {_res} to checkDeaths(victim)
+    if {_res} is true:
+        play sound "entity.enderdragon.growl" to all players
+        broadcast "&c&lFINAL KILL &r%victim% was finally killed and can no longer join."
 
-            set {_dist} to ({_r} - max({_dx}, {_dz}))
-            set {_rate} to {wb::rate}
-            set {_rateRad} to ({_rate} / 2)
+on join:
+    set the maximum health of player to 15
+    checkDeaths(player)
 
-            if {_dist} <= 0: 
-                set result to "-1" # -1 indicates player is in border
-            else if max({_x}, {_z}) <= ({wb::target} / 2):
-                set result to "-2" # safe indefinitely
-            else:
-                set {_seconds} to ({_dist} / {_rateRad})
-                # check with daycycle
-                set result to formatTimeBasic({_seconds})
+command /setdeaths <offlineplayer> <number>:
+    permission: deaths.set
+    trigger:
+        set {deaths::%arg 1's uuid%} to arg 2
+        send "Set %arg 1%'s deaths to %arg 2%" to sender
+        checkDeaths(arg 1)
+
+command /resetheart <offlineplayer>:
+    permission: deaths.resetheart
+    trigger:
+        delete {heart_use::%arg 1's uuid%}
+        send "Deleted heart use for %arg 1%"
+
+placeholderapi placeholder with the prefix "gdeath":
+    if the identifier is "lives":
+        set {_id} to player's uuid
+        if {deaths::%{_id}%} is not set:
+            set the result to "&c❤&c❤&7❤"
+        else if {deaths::%{_id}%} is 0:
+            set the result to "&c❤&c❤&7❤"
+        else if {deaths::%player's uuid%} is 1:
+            set the result to "&c❤&7❤&7❤"
+        else if {deaths::%player's uuid%} is -1:
+            set the result to "&c❤&c❤&c❤"
+        else:
+            set the result to "&7❤&7❤&7❤"
