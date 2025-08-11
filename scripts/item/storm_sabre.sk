@@ -1,16 +1,17 @@
 on load:
-    set {item::storm_sabre} to shiny unbreakable netherite sword with custom model data "storm_sabre"
-    set name of {item::storm_sabre} to "&9&lStorm Sabre"
-    set lore of {item::storm_sabre} to "&7storm sabre"
-    apply attribute modifier to {item::storm_sabre}:
+    set {_i} to shiny unbreakable netherite sword with custom model data "storm_sabre"
+    set name of {_i} to "&9&lStorm Sabre"
+    set lore of {_i} to "&7storm sabre"
+    apply attribute modifier to {_i}:
         id: "minecraft:base_attack_damage"
         attribute: attack damage
         amount: 12.0
         operation: add_number
         slot: mainhand_slot_group
-    apply attribute modifier to {item::storm_sabre}:
+    apply attribute modifier to {_i}:
         id: "minecraft:base_attack_speed"
         attribute: attack speed
         amount: -2.4 
         operation: add_number
         slot: mainhand_slot_group
+    set {item::storm_sabre} to {_i}

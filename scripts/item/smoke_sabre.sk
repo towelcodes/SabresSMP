@@ -1,17 +1,18 @@
 on load:
-    set {item::smoke_sabre} to shiny unbreakable netherite sword with custom model data "smoke_sabre"
-    set name of {item::smoke_sabre} to "&4&lSmoke Sabre"
-    set lore of {item::smoke_sabre} to "&7Once breathed upon by Shade."
-    enchant {item::smoke_sabre} with fire aspect 2
-    apply attribute modifier to {item::smoke_sabre}:
+    set {_i} to shiny unbreakable netherite sword with custom model data "smoke_sabre"
+    set name of {_i} to "&4&lSmoke Sabre"
+    set lore of {_i} to "&7Once breathed upon by Shade."
+    enchant {_i} with fire aspect 2
+    apply attribute modifier to {_i}:
         id: "minecraft:base_attack_damage"
         attribute: attack damage
         amount: 11.0
         operation: add_number
         slot: mainhand_slot_group
-    apply attribute modifier to {item::smoke_sabre}:
+    apply attribute modifier to {_i}:
         id: "minecraft:base_attack_speed"
         attribute: attack speed
         amount: -2.4
         operation: add_number
         slot: mainhand_slot_group
+    set {item::smoke_sabre} to {_i}
