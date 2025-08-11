@@ -1,0 +1,16 @@
+on load:
+    set {item::shade_sabre} to shiny unbreakable netherite sword with custom model data "shade_sabre"
+    set name of {item::shade_sabre} to "&8&lShade Sabre"
+    set lore of {item::shade_sabre} to "&7shade sabre"
+    apply attribute modifier to {item::shade_sabre}:
+        id: "minecraft:base_attack_damage"
+        attribute: attack damage
+        amount:13.0
+        operation: add_number
+        slot: mainhand_slot_group
+    apply attribute modifier to {item::shade_sabre}:
+        id: "minecraft:base_attack_speed"
+        attribute: attack speed
+        amount: -2.4 
+        operation: add_number
+        slot: mainhand_slot_group

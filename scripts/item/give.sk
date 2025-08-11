@@ -1,0 +1,14 @@
+command /cgive <string> [<player>]:
+    permission: ss.give
+    trigger:
+        if {item::%arg 1%} is not set:
+            send "&cItem does not exist"
+            stop
+        set {_i} to {item::%arg 1%}
+        if arg 2 is set:
+            give {_i} to arg 2
+        else:
+            if sender is player:
+                give {_i} to player
+            else:
+                send "&cYou need to be a player to recieve items"
