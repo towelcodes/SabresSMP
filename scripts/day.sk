@@ -1,5 +1,5 @@
 on script load:
-    set {day.start} to date(2025, 7, 26)
+    set {day.start} to date(2025, 7, 27)
     set {day.target} to 24
 
 function checkTime():

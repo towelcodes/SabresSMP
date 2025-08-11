@@ -14,20 +14,23 @@ on join:
     {joined::%player's uuid%} is not set
     if {glovalpvptimer.remaining} is not set:
         # the player gets their own grace period
-        gracePeriod(player, 3600)
-    else if {globalpvptimer.remaining} < 3600:
+        gracePeriod(player, 1800)
+    else if {globalpvptimer.remaining} < 1800:
         # the player gets their own grace period
-        gracePeriod(player, 3600)
+        gracePeriod(player, 1800)
     set {joined::%player's uuid%} to true
 
 on damage of entity by entity:
     attacker is a player
     victim is a player
     if {globalpvp.enabled} is false:
+        send "no pvp bc disabled" to console
         cancel event
     else if {singlepvp.disabled::%victim's uuid%} is set:
+        send "no pvp bc %victim% is in grace" to console
         cancel event
     else if {singlepvp.disabled::%attacker's uuid%} is set:
+        send "no pvp bc %attacker% is in grace" to console
         cancel event
 
 function gracePeriod(player: player, duration: number):
@@ -227,3 +230,104 @@ placeholderapi placeholder with the prefix "gpvp":
             set the result to "true"
         else:
             set the result to "false"
+            
+    
+function checkDeaths(player: player) :: boolean:
+    if {deaths::%{_player}'s uuid%} is 2:
+        if {_player} does not have permission "death.ascend":
+            kick {_player} because "&c&lGAME OVER%newline%&cYou were finally killed by %{killer::%{_player}'s uuid%}%.%newline%%newline%&7Don't worry!%newline%&7Season 2.5 is running in late August."
+            return true
+        else:
+            send "%{_player}% can ascend death" to console
+    return false
+
+# DEATHS
+
+function lifeCrystal() :: itemstack:
+    set {_item} to nether star with custom model data "life_crystal"
+    # apply custom model data to {_item}:
+    #     strings: "life_crystal"
+    set name of {_item} to "&c&lLife Crystal &7(right click)"
+    set lore of {_item} to " &7- &fAdds &cone life &fto a player.%newline% &7- &fCan only be used &conce&f!"
+    return {_item}
+    
+on load:
+    set {_lifecrystal} to lifeCrystal()
+    register new shaped recipe for {_lifecrystal} using diamond block, nether star, emerald block, nether star, netherite block, nether star, gold block, nether star and redstone block with id "sabres:life_crystal"
+    unlock custom recipe with id "sabres:life_crystal" for all players
+    
+on craft:
+    item is a nether star
+    name of item is "&c&lLife Crystal &7(right click)"
+    play sound "entity.wither.spawn" to all players
+    broadcast "&d%player% &dcrafted a &c&lLife Crystal&r&d!"
+    
+on right click with nether star:
+    name of tool of player is "&c&lLife Crystal &7(right click)"
+    if {heart_use::%player's uuid%} is set:
+        play sound "entity.wither.break_block" to player
+        send "&cYou have already used a Life Crystal before!" to player
+    else:
+        subtract 1 from {deaths::%player's uuid%}
+        set {heart_use::%player's uuid%} to true
+        play sound "entity.wither.ambient" to all players
+        broadcast "&d%player% &dused a &c&lLife Crystal&r&d!"
+        remove tool of player from player's inventory
+
+on death of player:
+    attacker is player
+    victim is player
+    if {globalpvp.enabled} is true:
+        if {singlepvp.disabled::%victim's uuid%} is not set:
+            add 1 to {deaths::%victim's uuid%}
+            send "%victim% has died %{deaths::%victim's uuid%}% times" to console
+            set {killer::%victim's uuid%} to attacker's name
+            set {_res} to checkDeaths(victim)
+            if {_res} is true:
+                play sound "entity.enderdragon.growl" to all players
+                broadcast "&c&lFINAL KILL &r%victim% was finally killed and can no longer join."
+            else:
+                gracePeriod(victim, 1800)
+        else:
+            send "death doesn't count because %victim% is in grace" to console
+    else:
+        send "death doesn't count because gpvp is off" to console
+
+on join:
+    set the maximum health of player to 15
+    checkDeaths(player)
+
+command /setdeaths <offlineplayer> <number>:
+    permission: deaths.set
+    trigger:
+        set {deaths::%arg 1's uuid%} to arg 2
+        send "Set %arg 1%'s deaths to %arg 2%" to sender
+        checkDeaths(arg 1)
+        
+command /getdeaths <offlineplayer>:
+    permission: deaths.get
+    trigger:
+        send "%arg 1% has %{deaths::%arg 1's uuid%}% deaths" to sender
+        
+command /resetheart <offlineplayer>:
+    permission: deaths.resetheart
+    trigger:
+        delete {heart_use::%arg 1's uuid%}
+        send "Deleted heart use for %arg 1%"
+
+placeholderapi placeholder with the prefix "gdeath":
+    if the identifier is "lives":
+        set {_id} to player's uuid
+        if {singlepvp.disabled::%{_id}%} is set:
+            set the result to "&a⚔"
+        else if {deaths::%{_id}%} is not set:
+            set the result to "&c❤&c❤&7❤"
+        else if {deaths::%{_id}%} is 0:
+            set the result to "&c❤&c❤&7❤"
+        else if {deaths::%player's uuid%} is 1:
+            set the result to "&c❤&7❤&7❤"
+        else if {deaths::%player's uuid%} is -1:
+            set the result to "&c❤&c❤&c❤"
+        else:
+            set the result to "&7❤&7❤&7❤"
+

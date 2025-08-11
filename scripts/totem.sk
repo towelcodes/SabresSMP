@@ -1,0 +1,42 @@
+# on inventory slot change:
+#     event-item != 0 airs
+#     event-item is a totem
+#     player's inventory contains a totem
+#     cancel event
+#     send "&cYou already have a totem in your inventory." to player
+
+# on pick up of totem of undying:
+#     player's inventory contains totem of undying
+#     cancel event
+#     send "&cYou already have a totem in your inventory." to player
+    
+# on inventory click:
+#     #holder of event-inventory is player
+#     if event-inventory action is pickup all:
+#         set {held_item::%event-player's uuid%} to event-item
+#         send "%event-click type% type in inventory %event-inventory% with action %event-inventory action% with item %event-item% ,,  itemstack %event-item stack% ,, name %name of event-item% ,, slot %event-slot% by player %event-player%" to console
+#     else if event-inventory action is place all:
+#         send "%event-click type% type in inventory %event-inventory% with action %event-inventory action% with item %event-item% ,,  itemstack %event-item stack% ,, name %name of event-item% ,, slot %event-slot% by player %event-player%" to console
+#         if holder of event-inventory is player:
+#             if {held_item::%event-player's uuid%} is totem of undying:
+#                 if event-player's inventory contains totem of undying:
+#                     send "&cYou can only hold one totem of undying!" to event-player
+#                     cancel event
+#                     stop
+#         delete {held_item::%event-player's uuid%}
+        
+
+# on inventory item move:
+#     holder of event-inventory is player
+#     send "%holder of past event-inventory% is transporting %event-item% to %holder of event-inventory%!" to console
+#     event-item stack is totem of undying
+#     past event-inventory has totem of undying
+#     cancel event
+#     send "you can't move in a second totem!" to holder of event-inventory
+
+# on player inventory slot change:
+#     event-item is a totem of undying
+#     player's inventory contains totem of undying
+#     send "%event-inventory action%" to player
+#     cancel event
+#     send "&cYou already have a totem in your inventory." to player

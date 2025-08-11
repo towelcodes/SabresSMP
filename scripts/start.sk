@@ -1,0 +1,22 @@
+command /start <number>:
+    permission: game.start
+    trigger:
+        broadcast "&aStarting in &f%arg 1% &aseconds!"
+        set {_t} to "%(arg 1 - 5)% seconds" parsed as timespan
+        wait {_t}
+        broadcast "&aStarting in &f5 &aseconds!"
+        play sound "block.note_block.pling" to all players
+        wait 1 second
+        broadcast "&aStarting in &f4 &aseconds!"
+        play sound "block.note_block.pling" to all players
+        wait 1 second
+        broadcast "&aStarting in &f3 &aseconds!"
+        play sound "block.note_block.pling" to all players
+        wait 1 second
+        broadcast "&aStarting in &f2 &aseconds!"
+        play sound "block.note_block.pling" to all players
+        wait 1 second
+        broadcast "&aStarting in &f1 &asecond!"
+        play sound "block.note_block.pling" to all players
+        wait 1 second
+        play sound "entity.ender_dragon.growl" to all players
