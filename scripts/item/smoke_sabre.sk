@@ -1,7 +1,7 @@
 on load:
     set {_i} to shiny unbreakable netherite sword with custom model data "smoke_sabre"
     set name of {_i} to "&4&lSmoke Sabre"
-    set lore of {_i} to "&7Once breathed upon by Shade."
+    set lore of {_i} to "&9Right click:%newline% &7Summon a fireball%newline% &80:20 cooldown"
     enchant {_i} with fire aspect 2
     apply attribute modifier to {_i}:
         id: "minecraft:base_attack_damage"
@@ -16,3 +16,18 @@ on load:
         operation: add_number
         slot: mainhand_slot_group
     set {item::smoke_sabre} to {_i}
+
+# CHECK: what explosion power / speed? what cooldown?
+on right click with netherite sword:
+    full custom model data of event-item stack contains "smoke_sabre"
+    if {cooldown::%player's uuid%::smoke_sabre} is set:
+        send "&cThis ability is on cooldown! &7(%displayTime({cooldown::%player's uuid%::smoke_sabre})%)" to player
+        play sound "entity.wither.break_block" with volume 0.5 to player
+        stop
+
+    set {_y} to yaw of player
+    set {_p} to pitch of player
+    set {_vec} to vector from yaw {_y} and pitch {_p}
+    set {_nbt} to nbt compound from "{Motion:[%x of {_vec}%,%y of {_vec}%,%z of {_vec}%]}"
+    spawn fireball at player with nbt {_nbt}
+    cooldown("smoke_sabre", 20, player)

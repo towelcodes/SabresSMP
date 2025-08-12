@@ -1,0 +1,9 @@
+function cooldown(name: string, duration: number, player: offlineplayer):
+    set {cooldown::%{_player}'s uuid%::%{_name}%} to {_duration}
+    loop {_duration} times:
+        subtract 1 from {cooldown::%{_player}'s uuid%::%{_name}%}
+        wait 1 second
+    delete {cooldown::%{_player}'s uuid%::%{_name}%}
+
+on skript stop:
+    delete {cooldown::*}

@@ -5,7 +5,7 @@ on load:
     apply attribute modifier to {_i}:
         id: "minecraft:base_attack_damage"
         attribute: attack damage
-        amount:13.0
+        amount: 13.0
         operation: add_number
         slot: mainhand_slot_group
     apply attribute modifier to {_i}:

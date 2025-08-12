@@ -1,10 +1,4 @@
 function displayTime(time: integer) :: string:
-    # set {_ts} to "%{_secs}% seconds" parsed as timespan
-
-    # set {_h} to floor({_ts}.hours + {_ts}.days * 24)
-    # set {_m} to {_ts}.minutes
-    # set {_s} to {_ts}.seconds
-
     set {_h} to floor({_time} / 3600)
     set {_m} to floor((mod({_time}, 3600)) / 60)
     set {_s} to mod({_time}, 60)
@@ -18,14 +12,4 @@ function displayTime(time: integer) :: string:
         set {_mstr} to pad({_m})
         set {_sstr} to pad({_s})
         return "%{_mstr}%:%{_sstr}%"
-    # only secs left, no padding
     return "%{_s}%s"
-
-    # set {_text} to "%{_hr}%:%{_min}%:%{_sec}%"
-    # set {_time::*} to split {_text} at ":"
-    # filter {_time::*} to match:
-    #     input is not "0"
-    # if size of {_time::*} is 1:
-    #     return "%last element of {_time::*}%s"
-    # set {_out} to join {_time::*} with ":"
-    # return "%{_out}%"
