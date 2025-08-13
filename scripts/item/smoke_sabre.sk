@@ -20,14 +20,8 @@ on load:
 # CHECK: what explosion power / speed? what cooldown?
 on right click with netherite sword:
     full custom model data of event-item stack contains "smoke_sabre"
-    if {cooldown::%player's uuid%::smoke_sabre} is set:
-        send "&cThis ability is on cooldown! &7(%displayTime({cooldown::%player's uuid%::smoke_sabre})%)" to player
-        play sound "entity.wither.break_block" with volume 0.5 to player
+    cooldownCheck("smoke_sabre", player):
         stop
 
-    set {_y} to yaw of player
-    set {_p} to pitch of player
-    set {_vec} to vector from yaw {_y} and pitch {_p}
-    set {_nbt} to nbt compound from "{Motion:[%x of {_vec}%,%y of {_vec}%,%z of {_vec}%]}"
-    spawn fireball at player with nbt {_nbt}
+    spawn fireball at player with nbt motionFromPlayer(player)
     cooldown("smoke_sabre", 20, player)

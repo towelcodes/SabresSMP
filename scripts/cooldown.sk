@@ -5,5 +5,12 @@ function cooldown(name: string, duration: number, player: offlineplayer):
         wait 1 second
     delete {cooldown::%{_player}'s uuid%::%{_name}%}
 
+function cooldownCheck(name: string, player: offlineplayer) :: boolean:
+    if {cooldown::%{_player}'s uuid%::%{_name}%} is set:
+        send "&cThis ability is on cooldown! &7(%displayTime({cooldown::%{_player}'s uuid%::%{_name}%})%)" to {_player}
+        play sound "entity.wither.break_block" with volume 0.5 to {_player}
+        return true
+    return false
+
 on skript stop:
     delete {cooldown::*}

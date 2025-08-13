@@ -13,3 +13,9 @@ function displayTime(time: integer) :: string:
         set {_sstr} to pad({_s})
         return "%{_mstr}%:%{_sstr}%"
     return "%{_s}%s"
+
+function motionFromPlayer(player: player) :: nbt compound:
+    set {_y} to yaw of {_player}
+    set {_p} to pitch of {_player}
+    set {_vec} to vector from yaw {_y} and pitch {_p}
+    return nbt compound from "{Motion:[%x of {_vec}%,%y of {_vec}%,%z of {_vec}%]}"
