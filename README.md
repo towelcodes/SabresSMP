@@ -1,6 +1,6 @@
-# survival-sprint
-A custom plugin for a Minecraft SMP server.
-- WIP (not ready for use yet)
-- documentation will be available on completion
+# SabresSMP
+Collection of Skripts + resource pack to add additional server side functionality.
+- WIP
+- this is my first minecraft server project so it's quite basic
 
-There will be an official server prepared when this plugin is completed.
+### Official server: mc.towel.codes
